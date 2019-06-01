@@ -16,7 +16,7 @@ def Main():
 	s.connect((host,port)) 
 
 	# message you send to server 
-	message = "shaurya says geeksforgeeks"
+	message = "checking port is open..."
 	while True: 
 
 		# message sent to server 
