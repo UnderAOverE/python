@@ -1,0 +1,198 @@
+execfile(pwdPath+"/pylib/utilib")
+execfile(pwdPath+"/pylib/customprint")
+execfile(pwdPath+"/pylib/waslib")
+execfile(pwdPath+"/pylib/simulation")
+class node:
+	""" WAS node administration and configuration class."""
+	def __init__(self, dry_run=0):
+		self.dprint=customprint(DEBUG)
+		self.eprint=customprint(ERROR)
+		self.iprint=customprint(INFO)
+		self.wprint=customprint(WARN)
+		self.fprint=customprint(FATAL)
+		lineSeparator = java.lang.System.getProperty('line.separator');
+		self.dprint("%s" %(self.__class__))
+		self.dry_run=int(dry_run)
+	#endDef
+	def checkIfExist(self, nodeName):
+		nodeID=waslib().getNodeId(nodeName)
+		if len(nodeID)==0:
+			return 0
+		#endIf
+		return 1
+	#endDef
+	def getNodeHostname(self, nodeName):
+		nodeID=waslib().getNodeId(nodeName)
+		return AdminConfig.showAttribute(nodeID, "hostName")
+	#endDef
+    	def listAll(self):
+		node_ids = utilib().splitLines(AdminConfig.list('Node'))
+		result = []
+		for node_id in node_ids:
+			nodename = waslib().getNodeName(node_id)
+			if not waslib().nodeIsDmgr(nodename):
+				result.append(nodename)
+			#endIf
+		#endFor
+		if 0==len(result):
+			self.wprint("No non-manager nodes are defined!!!")
+			self.iprint("Ignore above warning.")
+		#endIf
+		return result
+	#endDef
+	def synchronization(self, syncType, nodenames=None):
+		"""Synchronization config to all nodes - return 0 on success, non-zero on error."""
+		self.dprint("inside synchronization")
+		if waslib().whatEnv() == 'base':
+			self.wprint("WebSphere Base version, NOT sync'ing")
+			return 0
+		#endIf
+		returncode=0
+		if nodenames == None:
+			nodenames=self.listAll()
+		#endIf
+		for nodename in nodenames:
+			if not waslib().nodeIsDmgr(nodename) and not waslib().nodeIsUnmanaged(nodename):
+				self.iprint("synchronizing config to node %s." %(nodename))
+				if syncType=="Full":
+					self.iprint("syncType=Full synchronization.")
+					if self.dry_run:
+						self.iprint("simulation full reset repository.")
+						self.iprint("completed synchronization of node %s." %(nodename))
+						self.dprint("synchronization return code <simulation>")
+					else:
+						synchronizationObject=AdminControl.completeObjectName("type=ConfigRepository,process=nodeagent,node=%s,*" %(nodename))
+						self.dprint("synchronization object %s" %(synchronizationObject))
+						if synchronizationObject:
+							try:
+								_excp_ = 0
+								rc = AdminControl.invoke(synchronizationObject, 'refreshRepositoryEpoch')
+							except:
+								_type_, _value_, _tbck_ = sys.exc_info()
+								ErroR = `_value_`
+								_excp_ = 1
+							#endTryExcept
+							if (_excp_):
+								self.eprint("node %s synchronization FAILED!" %(nodename))
+								returncode=1
+							else:
+								self.iprint("synchronization completed for %s." %(nodename))
+							#endIfElse
+							self.dprint("synchronization return code %s" %(rc))
+						else:
+							self.wprint("unable to get sync object for node %s - Is node agent running???" %(nodename))
+							returncode=2
+						#endIfElse
+					#endIfElse
+				#endIf To-Do, normal sync'ing code here.
+			else:
+				self.wprint("nodeIsDmgr or nodeIsUnmanaged.")
+				self.wprint("skipping node %s." %(nodename))
+			#endIfElse
+		#endFor
+		if returncode != 0:
+			self.eprint("synchronizing %s FAILED!" %(nodename))
+			self.dprint("final return code %s" %(returncode))
+		#endIf
+		return returncode
+	#endDef
+	def isNodeSynced(self, nodenames=None):
+		"""Synchronization check for nodes - return 0 on success, non-zero on error."""
+		self.dprint("inside synchronization check")
+		if waslib().whatEnv() == 'base':
+			self.wprint("WebSphere Base version, No need")
+			return 0
+		#endIf
+		returncode=0
+		if nodenames == None:
+			nodenames=self.listAll()
+		#endIf
+		for nodename in nodenames:
+			if not waslib().nodeIsDmgr(nodename) and not waslib().nodeIsUnmanaged(nodename):
+				synchronizationObject=AdminControl.completeObjectName("type=NodeSync,process=nodeagent,node=%s,*" %(nodename))
+				self.dprint("synchronization(check) object %s" %(synchronizationObject))
+				if synchronizationObject:
+					rc = AdminControl.invoke(synchronizationObject, 'isNodeSynchronized')
+					if rc=="true":
+						self.iprint(" -----> %s sync completed." %(nodename))
+					else:
+						self.iprint("%s sync is in progress.." %(nodename))
+						returncode=1
+					#endIfElse
+				else:
+					self.wprint("unable to get sync object for node %s - Is node agent running???" %(nodename))
+					returncode=2
+				#endIfElse
+			else:
+				self.wprint("nodeIsDmgr or nodeIsUnmanaged.")
+				self.wprint("skipping node %s." %(nodename))
+			#endIfElse
+		#endFor
+		return returncode
+	#endDef
+	def saveAndNodeSync(self):
+		do_save_and_sync=0
+		rc=0
+		changes=utilib().splitLines(AdminConfig.queryChanges())
+		for change in changes:
+			self.dprint("updated file: %s" %(change))
+			do_save_and_sync=1
+			self.iprint("do save and sync=%s" %(do_save_and_sync))
+		#endFor
+		if do_save_and_sync:
+			if self.dry_run:
+				self.iprint("simulation full reset dmgr repository.")
+			else:
+				AdminConfig.save()
+				self.iprint("save completed.")
+				resetRepo=AdminControl.completeObjectName("type=ConfigRepository,process=dmgr,*")
+				try:
+					_excp_ = 0
+					resetCode=AdminControl.invoke(resetRepo, "refreshRepositoryEpoch")
+				except:
+					_type_, _value_, _tbck_ = sys.exc_info()
+					ErrOR = `_value_`
+					_excp_ = 1
+				#endTryExcept
+				if (_excp_):
+					self.eprint("Resetting repository(dmgr) encountered error!")
+				else:
+					self.iprint("Repository(dmgr) reset success.")
+					rc=self.synchronization("Full")
+					numberOfCycles=0
+					pauseTime=10
+					self.iprint("Nodes status check start.")
+					while (numberOfCycles < 30):
+                                    		numberOfCycles += 1
+						alldone=self.isNodeSynced()
+						self.iprint("isNodeSynced() rc= %s" %(alldone))
+						if alldone==0:
+							break;	
+						else:
+							self.iprint("Status refresh in 10 seconds...")
+						#endIfElse
+						sleep(pauseTime)
+					#endWhile
+					if numberOfCycles >=30:
+						self.eprint("Status took longer than 5 minutes.")
+						self.iprint("check the nodeagent logs and admin console to verify the status.")
+					#endIf
+				#endIfElse
+				self.dprint("Operation 'RepositoryEpoch' return code %s." %(resetCode))
+			#endIfElse
+		else:
+			self.iprint("no changes are made.")
+		#endIfElse
+	#endDef
+	def getDmgrNode(self):
+		node_ids = utilib().splitLines(AdminConfig.list('Node'))
+		for node_id in node_ids:
+			nodename = waslib().getNodeName(node_id)
+			if waslib().nodeIsDmgr(nodename):
+				return nodename
+			#endIf
+		#endFor
+	#endDef
+#endClass
+
+#end_node.

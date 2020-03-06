@@ -1,0 +1,62 @@
+lib_version="0.1v"
+
+import java, sys
+
+class utilib:
+	""" Custom utility library of miscellaneous handy definitions."""
+	def loadConfigFile(self, Type):
+		Properties=java.util.Properties()
+		if Type=="ApplicationServer":
+			ioStream=java.io.FileInputStream(pwdPath+"/pylib/ApplicationServer.config")
+		elif Type=="Node":
+			ioStream=java.io.FileInputStream(pwdPath+"/pylib/Node.config")
+		elif Type=="Cell":
+			ioStream=java.io.FileInputStream(pwdPath+"/pylib/Cell.config")
+		elif Type=="Application":
+			ioStream=java.io.FileInputStream(pwdPath+"/pylib/Application.config")
+		else:
+			ioStream=java.io.FileInputStream(pwdPath+"/pylib/Main.config")
+		#endIfElif
+		Properties.load(ioStream)
+		return Properties
+	#endDef
+	def splitList(self, s):
+		self.s=s
+		if self.s[0]!='[' or self.s[-1] != ']':
+			raise "Invalid string: %s" %(self.s)
+		#endIf
+		return self.s[1:-1].split(' ')
+	#endDef
+	def splitLines(self, Lines):
+		self.Lines=Lines
+		returnValue=[self.Lines]
+		if '\r' in self.Lines:
+			returnValue=self.Lines.split('\r\n')
+		elif '\n' in self.Lines:
+			returnValue=self.Lines.split('\n')
+		#endIfElif
+		if returnValue[-1]=='':
+			returnValue=returnValue[:-1]
+		#endIf
+		return returnValue 
+	#endDef
+	def printVersion(self, nodeName, serverName=None):
+		mbean=AdminControl.queryNames('type=Server,node=%s,name=%s,*' %(nodeName,serverName))
+		if mbean:
+			version=AdminTask.getNodeBaseProductVersion('[-nodeName %s]' %(nodeName))
+			return AdminControl.getAttribute(mbean, 'serverVersion')
+		else:
+			return "Cannot get version for %s %s because it's not running" %(nodeName,serverName)
+		#endIfElse
+	#endDef
+	def checkVariable(self, vName):
+		try:
+			xcheck=eval(vName)
+			return 1
+		except NameError:
+			return 0
+		#endTryExcept
+	#endDef
+#endClass
+
+#end_utillib.

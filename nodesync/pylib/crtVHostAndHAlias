@@ -1,0 +1,65 @@
+###################################################################################################################
+# Script Name : crtVHostAndHAlias.py.
+# Explanation : Creates the virtual host and its host aliases with the host name '*'
+#              
+# Date        : 04/11/2007
+#
+####################################################################################################################
+
+def createVHost(vhName):
+    cellName = AdminControl.getCell()
+    cellId = AdminConfig.getid("/Cell:"+cellName+"/")
+    vhId = AdminConfig.getid("/Cell:"+cellName+"/VirtualHost:"+vhName+"/")
+    if len(vhId) > 0:
+	logWar("VirtualHost:"+vhName+" already exists")
+    else:
+        vtempl = AdminConfig.listTemplates('VirtualHost')
+	AdminConfig.createUsingTemplate('VirtualHost', cellId, [['name', vhName]], vtempl)
+	logInfo("Successfully created the virtual host "+vhName+"")
+        AdminConfig.save()
+    crtHAlias(vhName);print""
+#endDef
+    
+def crtHAlias(vhName):
+    cellName = AdminControl.getCell();haName = '*'
+    cellId = AdminConfig.getid("/Cell:"+cellName+"/")
+    vhId = AdminConfig.getid("/Cell:"+cellName+"/VirtualHost:"+vhName+"/")
+    if len(vhId) > 0:
+       haPorts = ['1', '2', '3', '4', '5']
+       for haPort in haPorts:
+           vh_ha_array = AdminConfig.list('HostAlias', vhId).split()
+           if vh_ha_array == []:
+                logInfo("No host alias defined for virtual host "+vhName+"")
+                AdminConfig.create('HostAlias', vhId, [['hostname', haName],['port', haPort]])
+                AdminConfig.save()
+                logInfo("Successfully created host alias (*) with port "+haPort+"")
+           else:
+                haExists = 0
+                for hostAlias in vh_ha_array:
+                        hostname = AdminConfig.showAttribute(hostAlias, "hostname")
+                        port = AdminConfig.showAttribute(hostAlias, "port")
+                        if hostname == haName and port == haPort:
+                                logWar("HostAlias with hostname "+haName+" and port "+haPort+" already exists")
+                                haExists = 1
+                                break
+                if haExists == 0:
+                        AdminConfig.create('HostAlias', vhId, [['hostname', haName],['port', haPort]])
+                        AdminConfig.save()
+                        logInfo("Successfully created the host alias [*, "+haPort+"] ")
+       if len(vh_ha_array) != 0:
+          print"";print "%-16s %-22s " % ("HAHostname","HAPort")
+          print "%-16s %-22s " % ("----------","----------")
+          for hostAlias in vh_ha_array:
+              hostname = AdminConfig.showAttribute(hostAlias, "hostname")
+              port = AdminConfig.showAttribute(hostAlias, "port")
+              print "%-16s %-22s " % (hostname, port)
+    else:
+       logInfo("Virtual host:"+vhName+" does not exists")
+       return
+#endDef       
+
+# Main Method
+###################
+
+vHost = sys.argv[0]
+createVHost(vHost)

@@ -1,0 +1,262 @@
+[12/07/2017 16:08:30:909 EST] | localhost | Information | do save an sync=1
+[12/07/2017 16:08:30:962 EST] | localhost | Information | save completed.
+[12/07/2017 16:08:31:016 EST] | localhost | Information | Repository(dmgr) reset success.
+[12/07/2017 16:08:32:139 EST] | localhost | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:08:32:140 EST] | localhost | Information | syncType=Full synchronization.
+[12/07/2017 16:08:32:198 EST] | localhost | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:08:32:368 EST] | localhost | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:08:32:369 EST] | localhost | Information | syncType=Full synchronization.
+[12/07/2017 16:08:32:424 EST] | localhost | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:08:33:065 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:08:33:235 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:08:33:385 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:08:33:574 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:08:33:576 EST] | localhost | Information | Status refresh in 10 seconds...
+[12/07/2017 16:08:44:056 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:09:12:567 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync completed
+[12/07/2017 16:09:12:711 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:09:45:397 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync completed
+[12/07/2017 16:09:45:399 EST] | localhost | ERROR | Status took longer than 5 minutes.
+[12/07/2017 16:09:45:401 EST] | localhost | Information | check the nodeagent logs and admin console to verify the status.
+[12/07/2017 16:09:45:402 EST] | localhost | Information | save.result(0)
+[12/07/2017 16:16:09:341 EST] | localhost | Random |  -
+[12/07/2017 16:16:09:463 EST] | localhost | Information | do save an sync=1
+[12/07/2017 16:16:09:517 EST] | localhost | Information | save completed.
+[12/07/2017 16:16:09:570 EST] | localhost | Information | Repository(dmgr) reset success.
+[12/07/2017 16:16:10:699 EST] | localhost | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:10:701 EST] | localhost | Information | syncType=Full synchronization.
+[12/07/2017 16:16:10:746 EST] | localhost | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:10:905 EST] | localhost | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:10:908 EST] | localhost | Information | syncType=Full synchronization.
+[12/07/2017 16:16:11:042 EST] | localhost | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:11:543 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:11:740 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:16:11:898 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:12:187 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:16:12:189 EST] | localhost | Information |  1
+[12/07/2017 16:16:12:191 EST] | localhost | Information | Status refresh in 10 seconds...
+[12/07/2017 16:16:22:667 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:22:797 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:16:22:943 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:23:095 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:16:23:097 EST] | localhost | Information |  1
+[12/07/2017 16:16:23:098 EST] | localhost | Information | Status refresh in 10 seconds...
+[12/07/2017 16:16:33:548 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:33:660 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:16:33:911 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:16:34:034 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:16:34:036 EST] | localhost | Information |  1
+[12/07/2017 16:16:34:037 EST] | localhost | Information | Status refresh in 10 seconds...
+[12/07/2017 16:16:44:596 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:17:12:946 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync completed
+[12/07/2017 16:17:13:136 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:17:45:700 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync completed
+[12/07/2017 16:17:45:702 EST] | localhost | Information |  0
+[12/07/2017 16:17:45:703 EST] | localhost | ERROR | Status took longer than 5 minutes.
+[12/07/2017 16:17:45:705 EST] | localhost | Information | check the nodeagent logs and admin console to verify the status.
+[12/07/2017 16:17:45:706 EST] | localhost | Information | save.result(0)
+[12/07/2017 16:22:24:141 EST] | localhost | Random | --
+[12/07/2017 16:22:24:167 EST] | localhost | Information | do save an sync=1
+[12/07/2017 16:22:24:304 EST] | localhost | Information | save completed.
+[12/07/2017 16:22:24:355 EST] | localhost | Information | Repository(dmgr) reset success.
+[12/07/2017 16:22:25:482 EST] | localhost | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:22:25:484 EST] | localhost | Information | syncType=Full synchronization.
+[12/07/2017 16:22:25:530 EST] | localhost | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:22:25:692 EST] | localhost | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:22:25:694 EST] | localhost | Information | syncType=Full synchronization.
+[12/07/2017 16:22:25:829 EST] | localhost | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:22:26:306 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:22:26:478 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:22:26:636 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:22:26:834 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:22:26:835 EST] | localhost | Information | isNodeSynced() rc= 1
+[12/07/2017 16:22:26:837 EST] | localhost | Information | Status refresh in 10 seconds...
+[12/07/2017 16:22:37:506 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:22:37:629 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:22:37:786 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:22:37:920 EST] | localhost | Information | node localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:22:37:921 EST] | localhost | Information | isNodeSynced() rc= 1
+[12/07/2017 16:22:37:923 EST] | localhost | Information | Status refresh in 10 seconds...
+[12/07/2017 16:22:48:429 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:23:12:592 EST] | localhost | Information |  ---> node localhost-nodeNodelocalhost-node sync completed.
+[12/07/2017 16:23:12:831 EST] | localhost | Information | sync check for node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:23:46:061 EST] | localhost | Information |  ---> node localhost-nodeNodelocalhost-node sync completed.
+[12/07/2017 16:23:46:064 EST] | localhost | Information | isNodeSynced() rc= 0
+[12/07/2017 16:23:46:065 EST] | localhost | Information | save.result(0)
+[12/07/2017 16:23:46:067 EST] | localhost | Random | End.
+--
+[12/07/2017 16:31:04:692 EST] | localhost | Information | do save an sync=1
+[12/07/2017 16:31:04:740 EST] | localhost | Information | save completed.
+[12/07/2017 16:31:04:792 EST] | localhost | Information | Repository(dmgr) reset success.
+[12/07/2017 16:31:06:016 EST] | localhost | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:31:06:018 EST] | localhost | Information | syncType=Full synchronization.
+[12/07/2017 16:31:06:082 EST] | localhost | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:31:06:246 EST] | localhost | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:31:06:248 EST] | localhost | Information | syncType=Full synchronization.
+[12/07/2017 16:31:06:294 EST] | localhost | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:31:06:296 EST] | localhost | Information | Nodes status check start.
+[12/07/2017 16:31:07:034 EST] | localhost | Information | localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:31:07:333 EST] | localhost | Information | localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:31:07:334 EST] | localhost | Information | isNodeSynced() rc= 1
+[12/07/2017 16:31:07:336 EST] | localhost | Information | Status refresh in 10 seconds...
+[12/07/2017 16:31:17:338 EST] | localhost | Information | Nodes status check start.
+[12/07/2017 16:31:17:908 EST] | localhost | Information | localhost-nodeNodelocalhost-node sync is in progress..
+[12/07/2017 16:31:45:613 EST] | localhost | Information |  -----> localhost-nodeNodelocalhost-node sync completed.
+[12/07/2017 16:31:45:615 EST] | localhost | Information | isNodeSynced() rc= 1
+[12/07/2017 16:31:45:616 EST] | localhost | Information | Status refresh in 10 seconds...
+[12/07/2017 16:31:55:618 EST] | localhost | Information | Nodes status check start.
+[12/07/2017 16:32:12:761 EST] | localhost | Information |  -----> localhost-nodeNodelocalhost-node sync completed.
+[12/07/2017 16:32:13:051 EST] | localhost | Information |  -----> localhost-nodeNodelocalhost-node sync completed.
+[12/07/2017 16:32:13:057 EST] | localhost | Information | isNodeSynced() rc= 0
+[12/07/2017 16:32:13:062 EST] | localhost | Information | save.result(0)
+
+[12/07/2017 16:37:37:140 EST] | localhost | ?:28 | Random | --
+[12/07/2017 16:37:37:152 EST] | localhost | __init__:14 | DEBUG | __main__.node
+[12/07/2017 16:37:37:170 EST] | localhost | saveAndNodeSync:138 | DEBUG | updated file: WASX7241I: There are no unsaved changes in this workspace.
+[12/07/2017 16:37:37:173 EST] | localhost | saveAndNodeSync:140 | Information | do save and sync=1
+[12/07/2017 16:37:37:222 EST] | localhost | saveAndNodeSync:147 | Information | save completed.
+[12/07/2017 16:37:37:274 EST] | localhost | saveAndNodeSync:160 | Information | Repository(dmgr) reset success.
+[12/07/2017 16:37:37:275 EST] | localhost | synchronization:45 | DEBUG | inside synchronization
+[12/07/2017 16:37:37:277 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:37:279 EST] | localhost | whatEnv:123 | DEBUG | waslib  >>call whatEnv.
+[12/07/2017 16:37:37:281 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:37:425 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:37:621 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:37:623 EST] | localhost | getNodeName:29 | DEBUG | waslib  >>call getNodeName.
+[12/07/2017 16:37:37:625 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:37:643 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:37:646 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:37:37:647 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:37:649 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:37:650 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:37:652 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:37:670 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:37:913 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:37:915 EST] | localhost | getNodeName:29 | DEBUG | waslib  >>call getNodeName.
+[12/07/2017 16:37:37:916 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:032 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:034 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:37:38:035 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:38:037 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:38:038 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:38:039 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:38:054 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:277 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:279 EST] | localhost | getNodeName:29 | DEBUG | waslib  >>call getNodeName.
+[12/07/2017 16:37:38:280 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:289 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:290 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:37:38:291 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:38:293 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:38:294 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:38:296 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:38:315 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:381 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:382 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:37:38:384 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:38:385 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:38:386 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:38:388 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:38:402 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:472 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:474 EST] | localhost | nodeIsUnmanaged:37 | DEBUG | waslib  >>call nodeIdUnmanaged.
+[12/07/2017 16:37:38:476 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:38:478 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:38:479 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:38:480 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:38:495 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:560 EST] | localhost | synchronization:56 | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:37:38:562 EST] | localhost | synchronization:58 | Information | syncType=Full synchronization.
+[12/07/2017 16:37:38:575 EST] | localhost | synchronization:65 | DEBUG | synchronization object WebSphere:name=repository,process=nodeagent,platform=common,node=localhost-nodeNodelocalhost-node,version=5.0,type=ConfigRepository,mbeanIdentifier=repository,cell=uscbolQA1Cell,spec=1.0
+[12/07/2017 16:37:38:628 EST] | localhost | synchronization:79 | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:37:38:630 EST] | localhost | synchronization:81 | DEBUG | synchronization return code 1512682658626
+[12/07/2017 16:37:38:632 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:633 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:37:38:635 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:38:636 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:38:638 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:38:639 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:38:653 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:721 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:723 EST] | localhost | nodeIsUnmanaged:37 | DEBUG | waslib  >>call nodeIdUnmanaged.
+[12/07/2017 16:37:38:724 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:38:726 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:38:727 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:38:729 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:38:743 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:813 EST] | localhost | synchronization:56 | Information | synchronizing config to node localhost-nodeNodelocalhost-node.
+[12/07/2017 16:37:38:815 EST] | localhost | synchronization:58 | Information | syncType=Full synchronization.
+[12/07/2017 16:37:38:828 EST] | localhost | synchronization:65 | DEBUG | synchronization object WebSphere:name=repository,process=nodeagent,platform=common,node=localhost-nodeNodelocalhost-node,version=5.0,type=ConfigRepository,mbeanIdentifier=repository,cell=uscbolQA1Cell,spec=1.0
+[12/07/2017 16:37:38:859 EST] | localhost | synchronization:79 | Information | synchronization completed for localhost-nodeNodelocalhost-node.
+[12/07/2017 16:37:38:861 EST] | localhost | synchronization:81 | DEBUG | synchronization return code 1512682658856
+[12/07/2017 16:37:38:862 EST] | localhost | saveAndNodeSync:164 | Information | Nodes status check start.
+[12/07/2017 16:37:38:864 EST] | localhost | isNodeSynced:101 | DEBUG | inside synchronization check
+[12/07/2017 16:37:38:865 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:867 EST] | localhost | whatEnv:123 | DEBUG | waslib  >>call whatEnv.
+[12/07/2017 16:37:38:868 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:38:931 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:963 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:965 EST] | localhost | getNodeName:29 | DEBUG | waslib  >>call getNodeName.
+[12/07/2017 16:37:38:966 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:38:974 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:38:975 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:37:38:977 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:38:978 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:38:980 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:38:981 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:38:995 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:39:065 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:39:067 EST] | localhost | getNodeName:29 | DEBUG | waslib  >>call getNodeName.
+[12/07/2017 16:37:39:068 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:39:078 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:39:079 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:37:39:081 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:39:082 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:39:084 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:39:085 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:39:100 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:39:164 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:39:166 EST] | localhost | getNodeName:29 | DEBUG | waslib  >>call getNodeName.
+[12/07/2017 16:37:39:167 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:39:175 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:39:177 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:37:39:178 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:39:180 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:39:181 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:39:182 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:39:196 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:39:231 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:39:233 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:37:39:234 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:39:236 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:39:237 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:39:238 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:39:254 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:39:408 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:37:39:410 EST] | localhost | nodeIsUnmanaged:37 | DEBUG | waslib  >>call nodeIdUnmanaged.
+[12/07/2017 16:37:39:411 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:37:39:413 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:37:39:414 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:37:39:415 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:37:39:429 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:37:39:507 EST] | localhost | isNodeSynced:113 | DEBUG | synchronization(check) object WebSphere:name=nodeSync,process=nodeagent,platform=common,node=localhost-nodeNodelocalhost-node,diagnosticProvider=true,version=7.0.0.33,type=NodeSync,mbeanIdentifier=nodeSync,cell=uscbolQA1Cell,spec=1.0
+[12/07/2017 16:38:12:554 EST] | localhost | isNodeSynced:117 | Information |  -----> localhost-nodeNodelocalhost-node sync completed.
+[12/07/2017 16:38:12:556 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:38:12:557 EST] | localhost | nodeIsDmgr:33 | DEBUG | waslib  >>call nodeIsDmgr.
+[12/07/2017 16:38:12:559 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:38:12:560 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:38:12:561 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:38:12:563 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:38:12:578 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:38:12:642 EST] | localhost | __init__:13 | DEBUG | __main__.waslib
+[12/07/2017 16:38:12:644 EST] | localhost | nodeIsUnmanaged:37 | DEBUG | waslib  >>call nodeIdUnmanaged.
+[12/07/2017 16:38:12:646 EST] | localhost | nodeHasServerOfType:61 | DEBUG | waslib  >>call nodeHasServerOfType.
+[12/07/2017 16:38:12:647 EST] | localhost | getNodeId:73 | DEBUG | waslib  >>call getNodeId.
+[12/07/2017 16:38:12:649 EST] | localhost | getCellName:16 | DEBUG | waslib  >>call getCellName.
+[12/07/2017 16:38:12:650 EST] | localhost | getObjectsOfType:85 | DEBUG | waslib  >>call getObjectsOfType.
+[12/07/2017 16:38:12:663 EST] | localhost | getObjectAttribute:77 | DEBUG | waslib  >>call getObjectAttribute.
+[12/07/2017 16:38:12:736 EST] | localhost | isNodeSynced:113 | DEBUG | synchronization(check) object WebSphere:name=nodeSync,process=nodeagent,platform=common,node=localhost-nodeNodelocalhost-node,diagnosticProvider=true,version=7.0.0.33,type=NodeSync,mbeanIdentifier=nodeSync,cell=uscbolQA1Cell,spec=1.0
+[12/07/2017 16:38:46:146 EST] | localhost | isNodeSynced:117 | Information |  -----> localhost-nodeNodelocalhost-node sync completed.
+[12/07/2017 16:38:46:148 EST] | localhost | saveAndNodeSync:168 | Information | isNodeSynced() rc= 0
+[12/07/2017 16:38:46:149 EST] | localhost | saveAndNodeSync:181 | DEBUG | Operation 'RepositoryEpoch' return code 1512682657270.
+[12/07/2017 16:38:46:151 EST] | localhost | ?:56 | Random |   

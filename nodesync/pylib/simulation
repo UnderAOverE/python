@@ -1,0 +1,22 @@
+#
+# Simulation method.
+# sr87813
+#
+#
+
+def simulation(Simulation):
+	if Simulation:
+		print """ 
+					+
+					+
+					+
+          				  This is a simulation, no changes are made to the master configuration.
+                  												+
+														+
+														+
+
+		"""
+	#endIf
+#endDef
+
+#end_simulation.

@@ -1,0 +1,136 @@
+execfile(pwdPath+"/pylib/customprint")
+execfile(pwdPath+"/pylib/utilib")
+
+class waslib:
+	""" WebSphere custom class. Below are the list of attributes."""
+	def __init__(self):
+		propertiesFile="python/shanelib.properties"
+		self.dprint=customprint(DEBUG)
+		self.eprint=customprint(ERROR)
+		self.iprint=customprint(INFO)
+		self.wprint=customprint(WARN)
+		self.fprint=customprint(FATAL)
+		self.dprint("%s" %(self.__class__)) 
+	#endDef
+	def getCellName(self):
+		self.dprint("waslib  >>call getCellName.")
+		cellObjects=self.getObjectsOfType('Cell')
+		cellname=self.getObjectAttribute(cellObjects[0], 'name')
+		return cellname
+	#endDef
+	def getCellId(self, cellname=None):
+		self.dprint("waslib  >>call getCellId.")
+		if cellname==None:
+			cellname=getCellName()
+		#endIf
+		return AdminConfig.getid("/Cell:%s/" %(cellname))
+	#endDef
+	def getNodeName(self, node_id):
+		self.dprint("waslib  >>call getNodeName.")
+		return self.getObjectAttribute(node_id, 'name')
+	#endDef
+	def nodeIsDmgr(self,  nodename):
+		self.dprint("waslib  >>call nodeIsDmgr.")
+		return self.nodeHasServerOfType(nodename, 'DEPLOYMENT_MANAGER')
+	#endDef
+	def nodeIsUnmanaged(self, nodename):
+		self.dprint("waslib  >>call nodeIdUnmanaged.")
+		return not self.nodeHasServerOfType(nodename, 'NODE_AGENT')
+	#endDef
+	def getObjectByName(self, typename, objectname):
+		self.dprint("waslib  >>call getObjectByName.")
+		all=utilib().splitLines(AdminConfig.list(typename))
+		result=None
+		for obj in all:
+			name=AdminConfig.showAttribute(obj, 'name')
+			if name==objectname:
+				if result !=None:
+					raise "FOUND more than one %s with name %s." %(typename, objectname)
+				#endIf
+				result=obj
+			#endIf
+		#endFor
+		return result
+	#endDef
+	def getNodeVersion(self, nodename):
+		self.dprint("waslib  >>call getNodeVersion.")
+		version=AdminTask.getNodeBaseProductVersion('[-nodeName %s]' %(nodename))
+		return version
+	#endDef
+	def nodeHasServerOfType(self, nodename, servertype):
+          	self.dprint("waslib  >>call nodeHasServerOfType.")
+          	node_id=self.getNodeId(nodename)
+          	serverEntries=utilib().splitLines(AdminConfig.list('ServerEntry', node_id))
+          	for serverEntry in serverEntries:
+              		sType=AdminConfig.showAttribute(serverEntry, "serverType")
+              		if sType==servertype:
+                 		return 1
+              		#endIf
+          	#endFor
+          	return 0
+      	#endDef
+	def getNodeId(self, nodename):
+		self.dprint("waslib  >>call getNodeId.")
+		return AdminConfig.getid("/Cell:%s/Node:%s/" %(self.getCellName(), nodename))
+	#endDef
+	def getObjectAttribute(self, objectid, attributename):
+		self.dprint("waslib  >>call getObjectAttribute.")
+		result=AdminConfig.showAttribute(objectid, attributename)
+		if result !=None and result.startswith("[") and result.endswith("]"):
+			result=utilib().splitList(result)
+		#endIf
+		return result
+	#endDef
+	def getObjectsOfType(self, typename, scope=None):
+		self.dprint("waslib  >>call getObjectsOfType.")
+		if scope:
+			return utilib().splitLines(AdminConfig.list(typename, scope))
+		else:
+			return utilib().splitLines(AdminConfig.list(typename)) 
+		#endIfElse
+	#endDef
+	def getCfgItemId(self, scope, clusterName, nodeName, serverName, objectType, item):
+		if (scope=="cell"):
+			cellName=self.getCellName()
+			cfgItemId=AdminConfig.getid("/Cell:"+cellName+"/"+objectType+":"+item)
+		elif (scope=="node"):
+			cfgItemId=AdminConfig.getid("/Node:"+nodeName+"/"+objectType+":"+item)
+		elif (scope=="cluster"):
+			cfgItemId=AdminConfig.getid("/ServerCluster:"+clusterName+"/"+objectType+":"+item)
+		elif (scope=="server"):
+			cfgItemId=AdminConfig.getid("/Node:"+nodeName+"/Server:"+serverName+"/"+objectType+":"+item)
+		else:
+			cfgItemId=AdminConfig.getid("/%s:%s" %(objectType, item))
+		#endIfElif
+		return cfgItemId
+	#endDef
+	def getObjectByNodeAndName(self, nodename, typename, objectname):
+		node_id=self.getNodeId(nodename)
+		all=utilib().splitLines(AdminConfig.list(typename, node_id))
+		result=None
+		for obj in all:
+			name=AdminConfig.showAttribute(obj, 'name')
+			if name==objectname:
+				if result !=None:
+					raise "FOUND more than one %s with name %s" %(typename, objectname)
+				#endIf
+				result=obj
+			#endIf
+		#endFor
+		return result
+	#endDef
+	def whatEnv(self):
+		self.dprint("waslib  >>call whatEnv.")
+		servers=self.getObjectsOfType('Server')
+		for server in servers:
+			servertype=self.getObjectAttribute(server, 'serverType')
+			if servertype=='DEPLOYMENT_MANAGER':
+				return 'nd'
+			#endIf
+		#endFor
+		return 'base'
+	#endDef
+
+#endClass
+
+#end_waslib.

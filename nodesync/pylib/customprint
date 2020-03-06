@@ -1,0 +1,71 @@
+import time, sys, os, socket, java
+from time import strftime
+
+INFO="Info"
+ERROR="Error"
+DEBUG="Debug"
+FATAL="Fatal"
+WARN="Warn"
+
+class customprint:
+	""" Custom class for logging with 5 levels.
+		Debug
+		Information
+		Warning
+		Error
+		Fatal. """
+	def __init__(self, printLevel):
+		self.printLevel=printLevel;
+		self.currentHost=socket.gethostname()
+		if len(sys.argv) > 0:
+			debug_logging=(sys.argv[0]=="debug") and 1 or 0
+		else:
+			debug_logging=0;
+		#endIfElse
+		self.debug_logging=debug_logging;
+	#endDef
+	def __call__(self, _message):
+		if self.printLevel=="Info":
+			self.ll='Information'
+		elif self.printLevel=="Error":
+			self.ll='ERROR'
+		elif self.printLevel=="Debug":
+			self.ll='DEBUG'
+		elif self.printLevel=="Warn":
+			self.ll='Warning'
+		elif self.printLevel=="Fatal":
+			self.ll='FATAL'
+		else:
+			#print "log level not supported %s" %(self.printLevel)
+			self.ll='Random'
+		#endIfElifElse
+		millisecond="%.3f" %(repr(time.time()));
+		accurate_millisecond=millisecond.split('.')[1];Timer=strftime("%m/%d/%Y %H:%M:%S:"+accurate_millisecond+" %Z")
+		if self.debug_logging:
+		#if 1: # Enable this for debug level.
+			functionName =(sys._getframe(1).f_code.co_name);className=self.__class__.__name__
+			lineNumber=str(sys._getframe(1).f_lineno);dTrace=(functionName, lineNumber);debugTrace=":".join(dTrace)
+			format='%-6s | %2s | %2s';
+			fileHandle=open(pwdPath+"/nodesync.log", "a")
+			print >>fileHandle, format % ('['+Timer+'] | '+self.currentHost+' | '+debugTrace+'', self.ll, _message) 
+			fileHandle.close()
+			print "\t\t\t %s" %(_message)
+		else:
+			if self.ll!='DEBUG' and self.ll!='Random':
+				format='%-6s | %2s';
+				fileHandle=open(pwdPath+"/nodesync.log", "a")
+				print >>fileHandle, format % ('['+Timer+'] | '+self.currentHost+' | '+self.ll+'', _message)
+				fileHandle.close()
+				print "\t\t\t %s" %(_message)
+			#endIf
+			if self.ll=='Random':
+                                fileHandle=open(pwdPath+"/nodesync.log", "a")
+                                print >>fileHandle, _message
+                                fileHandle.close()
+			#endIf
+		#endIfElse
+	#endDef
+	
+#endClass
+
+#end_customprint.
