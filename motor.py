@@ -9,8 +9,8 @@ def init_connection() -> motor.motor_asyncio.AsyncIOMotorCollection:
     return db['mycollection']
 
 async def run_findall_query(
+    skip: int,
     batch_size: int = 1000,
-    last_id: Optional[Any] = None,
     filter: Optional[Dict[str, Any]] = None,
     projection: Optional[Dict[str, int]] = None,
     sort: Optional[List[Tuple[str, int]]] = None
@@ -18,9 +18,7 @@ async def run_findall_query(
     connection = init_connection()
     
     # Create the query with an optional filter
-    query = {"_id": {"$gt": last_id}} if last_id else {}
-    if filter:
-        query.update(filter)
+    query = filter if filter else {}
     
     # Apply projection if provided
     cursor = connection.find(query, projection)
@@ -31,8 +29,8 @@ async def run_findall_query(
     else:
         cursor = cursor.sort("_id")
         
-    # Limit the result set to the specified batch size
-    cursor = cursor.limit(batch_size)
+    # Skip the specified number of documents
+    cursor = cursor.skip(skip).limit(batch_size)
     
     # Convert the cursor to a list with the specified batch size
     results = await cursor.to_list(length=batch_size)
@@ -45,15 +43,16 @@ async def findall(
     projection: Optional[Dict[str, int]] = None,
     sort: Optional[List[Tuple[str, int]]] = None
 ) -> List[Dict[str, Any]]:
-    last_id: Optional[Any] = None
+    skip: int = 0
     
     while True:
-        results = await run_findall_query(batch_size, last_id, filter, projection, sort)
+        results = await run_findall_query(skip, batch_size, filter, projection, sort)
         if not results:
             break
         
-        last_id = results[-1]["_id"]
         yield results  # Using yield to handle large datasets efficiently
+        
+        skip += batch_size
 
 # Example usage of the client with async context manager
 async def main():
