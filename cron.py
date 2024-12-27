@@ -53,6 +53,12 @@ for doc in documents:
             
             service_datetime = datetime.combine(current_date, service_time).astimezone(timezone)
             
+            # If the status is PENDING and not past current time, return this object
+            if obj['status'] == "PENDING" and service_datetime.time() >= current_time:
+                print(f"Returning PENDING object for document {doc['_id']}: {obj}")
+                closest_object = obj
+                break  # Stop processing further objects for this document
+            
             # Mark as "FAILED" if past time
             if service_datetime.time() < current_time:
                 obj['status'] = 'FAILED'
@@ -63,13 +69,13 @@ for doc in documents:
                     )
                 )
             else:
-                # Find the closest object
+                # Find the closest object if not yet found
                 time_difference = service_datetime - datetime.now(tz=timezone)
                 if closest_time_difference is None or time_difference < closest_time_difference:
                     closest_time_difference = time_difference
                     closest_object = obj
 
-    # Optional: You can log or process the closest object here
+    # Optional: Log or process the closest object if found
     if closest_object:
         print(f"Closest object for document {doc['_id']}: {closest_object}")
 
