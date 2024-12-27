@@ -1,4 +1,4 @@
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 from datetime import datetime, timedelta
 import pytz
 
@@ -12,14 +12,27 @@ current_date = datetime.now()
 current_month = current_date.strftime('%B')  # e.g., "January"
 current_day = current_date.strftime('%A')    # e.g., "Monday"
 
-# Fetch the document for the current month and day
-document = collection.find_one({
-    f"scheduler_details.{current_month}.{current_day}": {"$exists": True}
-})
+# Define sector, environment, and active fields for filtering
+sector = "desired_sector"
+environment = "desired_environment"
+active = True
 
-if document:
-    # Extract the day's objects
-    day_objects = document['scheduler_details'][current_month][current_day]
+# Query to find matching documents
+query = {
+    "sector": sector,
+    "environment": environment,
+    "active": active,
+    f"scheduler_details.{current_month}.{current_day}": {"$exists": True}
+}
+
+# Cursor to iterate over matching documents
+documents = collection.find(query)
+
+bulk_updates = []  # To store bulk updates
+timezone_cache = {}  # Cache timezone objects for efficiency
+
+for doc in documents:
+    day_objects = doc['scheduler_details'][current_month][current_day]
     current_time = current_date.time()
 
     # To store the closest upcoming object
@@ -31,15 +44,23 @@ if document:
         if obj['status'] in [None, 'PENDING']:
             # Parse service_level_time considering the timezone
             service_time = datetime.strptime(obj['service_level_time'], '%H:%M').time()
-            timezone = pytz.timezone(obj['timezone']) if obj['timezone'] else pytz.UTC
+            
+            # Cache timezone objects for efficiency
+            timezone_name = obj['timezone'] if obj['timezone'] else "UTC"
+            if timezone_name not in timezone_cache:
+                timezone_cache[timezone_name] = pytz.timezone(timezone_name)
+            timezone = timezone_cache[timezone_name]
+            
             service_datetime = datetime.combine(current_date, service_time).astimezone(timezone)
             
             # Mark as "FAILED" if past time
             if service_datetime.time() < current_time:
                 obj['status'] = 'FAILED'
-                collection.update_one(
-                    {f"scheduler_details.{current_month}.{current_day}.service_level_time": obj['service_level_time']},
-                    {"$set": {"status": "FAILED"}}
+                bulk_updates.append(
+                    UpdateOne(
+                        {"_id": doc['_id'], f"scheduler_details.{current_month}.{current_day}.service_level_time": obj['service_level_time']},
+                        {"$set": {f"scheduler_details.{current_month}.{current_day}.$.status": "FAILED"}}
+                    )
                 )
             else:
                 # Find the closest object
@@ -48,7 +69,11 @@ if document:
                     closest_time_difference = time_difference
                     closest_object = obj
 
-    # Print the closest object
-    print(closest_object)
-else:
-    print("No matching document found.")
+    # Optional: You can log or process the closest object here
+    if closest_object:
+        print(f"Closest object for document {doc['_id']}: {closest_object}")
+
+# Execute bulk updates
+if bulk_updates:
+    collection.bulk_write(bulk_updates)
+    print(f"{len(bulk_updates)} statuses updated.")
