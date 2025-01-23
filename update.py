@@ -33,9 +33,9 @@ class UpdateJobRequest(BaseModel):
     trigger_args: dict = Field(
         title="Trigger Arguments",
         description=(
-            "Arguments required for the specified trigger type. For example, "
-            "a 'cron' trigger might use {'hour': 14, 'minute': 30}, while an "
-            "'interval' trigger might use {'seconds': 30}."
+            "Arguments required for the specified trigger type. "
+            "For 'cron', specify fields like 'year', 'month', 'day', 'hour', 'minute', 'second', etc. "
+            "For 'interval', specify 'weeks', 'days', 'hours', 'minutes', or 'seconds'."
         ),
         example={"hour": 14, "minute": 30}
     )
@@ -46,15 +46,38 @@ class UpdateJobRequest(BaseModel):
                 {
                     "job_id": "job-12345",
                     "trigger_type": "cron",
-                    "trigger_args": {"hour": 14, "minute": 30}
+                    "trigger_args": {
+                        "year": 2025,
+                        "month": 1,
+                        "day": 23,
+                        "hour": 14,
+                        "minute": 30,
+                        "second": 0,
+                        "day_of_week": "mon-fri"
+                    }
                 },
                 {
                     "job_id": "ALL",
                     "trigger_type": "interval",
-                    "trigger_args": {"seconds": 60}
+                    "trigger_args": {
+                        "weeks": 1,
+                        "days": 2,
+                        "hours": 3,
+                        "minutes": 30,
+                        "seconds": 45
+                    }
+                },
+                {
+                    "job_id": "job-67890",
+                    "trigger_type": "date",
+                    "trigger_args": {
+                        "run_date": "2025-01-23T15:00:00",
+                        "timezone": "UTC"
+                    }
                 }
             ]
         }
+
 
 # Pydantic response model
 class UpdateJobResponse(BaseModel):
