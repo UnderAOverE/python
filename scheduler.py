@@ -93,6 +93,7 @@ class Scheduler:
                 },
             )
             self.scheduler_running = False  # Track the running state
+            self._setup_listeners()  # Add event listeners
 
     def start(self):
         """Start the scheduler if it's not already running."""
@@ -135,6 +136,30 @@ class Scheduler:
     def running(self):
         """Check if the scheduler is currently running."""
         return self.scheduler_running
+
+    def _setup_listeners(self):
+        """Add listeners to capture job execution events."""
+        self.scheduler.add_listener(self._job_executed, EVENT_JOB_EXECUTED)
+        self.scheduler.add_listener(self._job_error, EVENT_JOB_ERROR)
+        self.scheduler.add_listener(self._job_max_instances, EVENT_JOB_MAX_INSTANCES)
+
+    def _job_executed(self, event):
+        """Handle the event when a job is successfully executed."""
+        job_id = event.job_id
+        print(f"Job {job_id} executed successfully.")
+
+    def _job_error(self, event):
+        """Handle the event when a job encounters an error."""
+        job_id = event.job_id
+        exception = event.exception
+        traceback = event.traceback
+        print(f"Job {job_id} encountered an error: {exception}")
+        print(f"Traceback: {traceback}")
+
+    def _job_max_instances(self, event):
+        """Handle the event when a job exceeds max instances."""
+        job_id = event.job_id
+        print(f"Job {job_id} exceeded its max instance limit.")
 
 
 # Example Usage:
