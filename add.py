@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
-from typing import Optional, Literal, Dict
+from typing import Optional, Literal, Dict, Any
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
 
@@ -19,6 +19,11 @@ class AddJobRequest(BaseModel):
         description="Arguments for the trigger (e.g., `{'hour': '12', 'minute': '0'}` for cron)."
     )
     job_function: str = Field(..., title="Job Function", description="Path to the job function, e.g., `module.function`.")
+    job_arguments: Optional[Dict[str, Any]] = Field(
+        default=None, 
+        title="Job Arguments", 
+        description="Optional dictionary of arguments to pass to the job function."
+    )
     max_instances: Optional[int] = Field(
         1, 
         title="Max Instances", 
@@ -38,6 +43,7 @@ class AddJobRequest(BaseModel):
                 "trigger_type": "cron",
                 "trigger_args": {"hour": "12", "minute": "0"},
                 "job_function": "my_module.my_function",
+                "job_arguments": {"arg1": "value1", "arg2": 42},
                 "max_instances": 3,
                 "replace_existing": True
             }
@@ -70,21 +76,8 @@ async def add_job(job_data: AddJobRequest):
     Add a new job to the scheduler.
     """
     try:
-        # Dynamically import the job function
-        module_name, func_name = job_data.job_function.rsplit('.', 1)
-        module = __import__(module_name, fromlist=[func_name])
-        job_func = getattr(module, func_name)
-
-        # Add the job to the scheduler
-        job = scheduler.add_job(
-            job_func,
-            trigger=job_data.trigger_type,
-            id=job_data.job_id,
-            name=job_data.name,
-            replace_existing=job_data.replace_existing,
-            max_instances=job_data.max_instances,
-            **job_data.trigger_args
-        )
+        # Call the standalone function to add a job
+        job = add_job_to_scheduler(scheduler, job_data)
 
         # Response
         return AddJobResponse(
