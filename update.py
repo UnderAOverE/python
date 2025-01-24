@@ -1,105 +1,3 @@
-from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import datetime, timedelta
-from apscheduler.jobstores.base import JobLookupError
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.date import DateTrigger
-from apscheduler.triggers.interval import IntervalTrigger
-import logging
-
-app = FastAPI()
-
-# Example scheduler setup
-scheduler = AsyncIOScheduler()
-scheduler.start()
-
-# Logger for uncaught exceptions
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Pydantic request model
-class UpdateJobRequest(BaseModel):
-    job_id: str = Field(
-        title="Job ID",
-        description="The unique identifier of the job to be updated. Use 'all' (case-insensitive) to update all jobs.",
-        example="job-12345"
-    )
-    trigger_type: str = Field(
-        title="Trigger Type",
-        description="The type of trigger to apply: 'cron', 'date', or 'interval'.",
-        example="cron"
-    )
-    trigger_args: dict = Field(
-        title="Trigger Arguments",
-        description=(
-            "Arguments required for the specified trigger type. "
-            "For 'cron', specify fields like 'year', 'month', 'day', 'hour', 'minute', 'second', etc. "
-            "For 'interval', specify 'weeks', 'days', 'hours', 'minutes', or 'seconds'."
-        ),
-        example={"hour": 14, "minute": 30}
-    )
-
-    class Config:
-        json_schema_extra = {
-            "examples": [
-                {
-                    "job_id": "job-12345",
-                    "trigger_type": "cron",
-                    "trigger_args": {
-                        "year": 2025,
-                        "month": 1,
-                        "day": 23,
-                        "hour": 14,
-                        "minute": 30,
-                        "second": 0,
-                        "day_of_week": "mon-fri"
-                    }
-                },
-                {
-                    "job_id": "ALL",
-                    "trigger_type": "interval",
-                    "trigger_args": {
-                        "weeks": 1,
-                        "days": 2,
-                        "hours": 3,
-                        "minutes": 30,
-                        "seconds": 45
-                    }
-                },
-                {
-                    "job_id": "job-67890",
-                    "trigger_type": "date",
-                    "trigger_args": {
-                        "run_date": "2025-01-23T15:00:00",
-                        "timezone": "UTC"
-                    }
-                }
-            ]
-        }
-
-
-# Pydantic response model
-class UpdateJobResponse(BaseModel):
-    message: str = Field(
-        title="Message",
-        description="A message indicating the result of the operation.",
-        example="Job updated successfully."
-    )
-    updated_jobs: List[str] = Field(
-        title="Updated Jobs",
-        description="A list of job IDs that were updated.",
-        example=["job-12345", "job-67890"]
-    )
-
-    class Config:
-        json_schema_extra = {
-            "examples": [
-                {"message": "Job updated successfully.", "updated_jobs": ["job-12345"]},
-                {"message": "All jobs updated successfully.", "updated_jobs": ["job-12345", "job-67890"]}
-            ]
-        }
-
 @app.post(
     "/update-job",
     response_model=UpdateJobResponse,
@@ -108,63 +6,35 @@ class UpdateJobResponse(BaseModel):
 async def update_job(request: UpdateJobRequest):
     """
     Updates or reschedules a job based on its job_id.
-    If job_id is "all" (case-insensitive), updates all jobs.
+    Optionally updates the function and its arguments.
     """
     try:
-        updated_jobs = []
-
-        if request.job_id.lower() == "all":
-            jobs = scheduler.get_jobs()
-            if not jobs:
-                return UpdateJobResponse(
-                    message="No jobs to update. Scheduler is empty.",
-                    updated_jobs=[]
-                )
-            for job in jobs:
-                _update_job_trigger(job, request.trigger_type, request.trigger_args)
-                updated_jobs.append(job.id)
-            return UpdateJobResponse(
-                message="All jobs updated successfully.",
-                updated_jobs=updated_jobs
-            )
-        else:
-            # Update a single job
-            job = scheduler.get_job(request.job_id)
-            if not job:
-                raise JobLookupError(f"Job with ID '{request.job_id}' not found.")
-            _update_job_trigger(job, request.trigger_type, request.trigger_args)
-            updated_jobs.append(request.job_id)
-            return UpdateJobResponse(
-                message="Job updated successfully.",
-                updated_jobs=updated_jobs
-            )
+        updated_jobs = update_job_in_scheduler(
+            scheduler=scheduler,
+            job_id=request.job_id,
+            trigger_type=request.trigger_type,
+            trigger_args=request.trigger_args,
+            func=request.func if hasattr(request, 'func') else None,
+            args=request.args if hasattr(request, 'args') else None,
+            kwargs=request.kwargs if hasattr(request, 'kwargs') else None
+        )
+        return UpdateJobResponse(
+            message="Job(s) updated successfully.",
+            updated_jobs=updated_jobs
+        )
     except JobLookupError as e:
-        # Job with the given ID does not exist
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
-        # Log uncaught exceptions and return 500
         logger.exception("Unexpected error while updating job.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while updating the job."
         )
-
-def _update_job_trigger(job, trigger_type: str, trigger_args: dict):
-    """
-    Helper function to update a job's trigger.
-    """
-    trigger = None
-
-    if trigger_type == "cron":
-        trigger = CronTrigger(**trigger_args)
-    elif trigger_type == "date":
-        trigger = DateTrigger(**trigger_args)
-    elif trigger_type == "interval":
-        trigger = IntervalTrigger(**trigger_args)
-    else:
-        raise ValueError(f"Unsupported trigger_type '{trigger_type}'")
-
-    scheduler.reschedule_job(job.id, trigger=trigger)
