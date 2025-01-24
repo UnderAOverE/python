@@ -51,6 +51,19 @@ class UpdateJobRequest(BaseModel):
         example={"key1": "value1", "key2": "value2"}
     )
 
+    class Config:
+        schema_extra = {
+            "example": {
+                "job_id": "job_1234",
+                "trigger_type": "cron",
+                "trigger_args": {"hour": 14, "minute": 30},
+                "func": "my_task_function",
+                "args": ["arg1", "arg2"],
+                "kwargs": {"key1": "value1", "key2": "value2"}
+            }
+        }
+
+
 class UpdateJobResponse(BaseModel):
     """
     Response model for the result of updating a job in the scheduler.
@@ -67,6 +80,15 @@ class UpdateJobResponse(BaseModel):
         description="A list of IDs for the jobs that were updated.",
         example=["job_1234", "job_5678"]
     )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "message": "Job(s) updated successfully.",
+                "updated_jobs": ["job_1234", "job_5678"]
+            }
+        }
+
 
 def update_job_in_scheduler(
     scheduler: AsyncIOScheduler,
