@@ -1,6 +1,6 @@
-from fastapi import FastAPI, status, HTTPException
+from fastapi import FastAPI, Query, Body, status, HTTPException
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.job import Job
 
@@ -17,7 +17,9 @@ class JobDetails(BaseModel):
         None, title="Next Run Time", description="The next scheduled run time for the job."
     )
     trigger: str = Field(..., title="Trigger Type", description="The type of trigger for the job (e.g., cron, interval).")
-    trigger_args: dict = Field(..., title="Trigger Arguments", description="Arguments for the job's trigger.")
+    trigger_args: Dict = Field(..., title="Trigger Arguments", description="Arguments for the job's trigger.")
+    func: str = Field(..., title="Function Name", description="The name of the function associated with the job.")
+    func_args: List = Field(..., title="Function Arguments", description="The arguments passed to the function.")
 
     class Config:
         json_schema_extra = {
@@ -27,6 +29,8 @@ class JobDetails(BaseModel):
                 "next_run_time": "2025-01-23T12:00:00",
                 "trigger": "cron",
                 "trigger_args": {"hour": "12", "minute": "0"},
+                "func": "my_module.my_function",
+                "func_args": ["arg1", "arg2"],
             }
         }
 
@@ -45,25 +49,62 @@ class JobListResponse(BaseModel):
                         "next_run_time": "2025-01-23T12:00:00",
                         "trigger": "cron",
                         "trigger_args": {"hour": "12", "minute": "0"},
+                        "func": "my_module.my_function",
+                        "func_args": ["arg1", "arg2"],
                     }
                 ],
                 "total_jobs": 1,
             }
         }
 
-# Route to get all job details
+class JobQuery(BaseModel):
+    job_ids: Optional[List[str]] = Field(None, title="Job IDs", description="List of job IDs to fetch.")
+    names: Optional[List[str]] = Field(None, title="Job Names", description="List of job names to fetch.")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "job_ids": ["job1", "job2"],
+                "names": ["Example Job", "Another Job"]
+            }
+        }
+
+# Route to fetch jobs with filtering options
 @app.get("/jobs", response_model=JobListResponse, status_code=status.HTTP_200_OK)
-async def get_all_jobs():
+@app.post("/jobs", response_model=JobListResponse, status_code=status.HTTP_200_OK)
+async def get_jobs(
+    job_ids: Optional[List[str]] = Query(None, title="Job IDs", description="List of job IDs to fetch."),
+    names: Optional[List[str]] = Query(None, title="Job Names", description="List of job names to fetch."),
+    body: Optional[JobQuery] = Body(None),
+):
     """
-    Fetch all jobs and their details from the scheduler.
+    Fetch jobs with optional filters for job IDs and names via query parameters or request body.
     """
     try:
+        # Merge query params and request body
+        if body:
+            if body.job_ids:
+                job_ids = list(set((job_ids or []) + body.job_ids))
+            if body.names:
+                names = list(set((names or []) + body.names))
+
         jobs = scheduler.get_jobs()
-        if not jobs:
+
+        # Filter jobs based on job_ids or names
+        if job_ids or names:
+            filtered_jobs = []
+            for job in jobs:
+                if (job_ids and job.id in job_ids) or (names and job.name in names):
+                    filtered_jobs.append(job)
+        else:
+            filtered_jobs = jobs
+
+        if not filtered_jobs:
             return JobListResponse(jobs=[], total_jobs=0)
 
+        # Convert job details to response format
         job_details = []
-        for job in jobs:
+        for job in filtered_jobs:
             job_details.append(
                 JobDetails(
                     job_id=job.id,
@@ -71,6 +112,8 @@ async def get_all_jobs():
                     next_run_time=str(job.next_run_time) if job.next_run_time else None,
                     trigger=job.trigger.__class__.__name__,
                     trigger_args=job.trigger.fields if hasattr(job.trigger, "fields") else {},
+                    func=job.func_ref,  # Function reference
+                    func_args=list(job.args) if job.args else [],
                 )
             )
         return JobListResponse(jobs=job_details, total_jobs=len(job_details))
