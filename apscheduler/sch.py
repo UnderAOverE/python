@@ -2,10 +2,12 @@
 from typing import Protocol, Any, Callable
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.mongodb import MongoDBJobStore
+from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.job import Job
 import logging
 import traceback
-import inspect
+from threading import Lock
+from app.common.database import get_database_client
 
 logger = logging.getLogger("my_logger")
 
@@ -19,14 +21,27 @@ class Scheduler(Protocol):
     def update_job(self, job_id: str, **kwargs: Any) -> None: ...
 
 class APSchedulerWrapper:
-    """Wrapper class for APScheduler."""
-    _instance = None
+    _instance = None  # Holds the single instance
+    _lock = Lock()    # Thread-safe lock for initialization
 
-    def __new__(cls, uri: str) -> "APSchedulerWrapper":
-        if cls._instance is None:
-            cls._instance = super(APSchedulerWrapper, cls).__new__(cls)
-            jobstore = MongoDBJobStore(database="mydb", client_kwargs={"host": uri})
-            cls._instance._scheduler = AsyncIOScheduler(jobstores={'default': jobstore})
+    def __new__(cls, uri: str, *args, **kwargs):
+        if not cls._instance:
+             with cls._lock:  # Ensure thread-safe initialization
+                if not cls._instance:
+                  cls._instance = super().__new__(cls)
+                  cls._instance.mongo_client = get_database_client(uri).get_client()  # MongoDB client
+                  cls._instance.job_store = MongoDBJobStore(client=cls._instance.mongo_client, database="mydb", collection="jobs")
+                  cls._instance._scheduler = AsyncIOScheduler(
+                      jobstores={"default": cls._instance.job_store},
+                      executors={"default": ThreadPoolExecutor(10)},  # Adjust thread pool size as needed
+                      job_defaults={
+                          "misfire_grace_time": None,  # No grace time for misfired jobs
+                          "coalesce": False,          # Don't combine missed executions
+                          "max_instances": 1          # Prevent overlapping job executions
+                      },
+                   )
+                  cls._instance.scheduler_running = False  # Track the running state
+                  cls._instance._jobs_loaded = False
         return cls._instance
 
     def add_job(self, func: Callable, **kwargs: Any) -> None:
@@ -44,14 +59,13 @@ class APSchedulerWrapper:
     def update_job(self, job_id: str, **kwargs: Any) -> None:
         """Updates a scheduled job."""
         self._scheduler.modify_job(job_id, **kwargs)
-
+    
     def start(self) -> None:
         """Starts the scheduler."""
         try:
-            self._scheduler.start()
+          self._scheduler.start()
         except Exception as e:
-            logger.error(f"Error starting scheduler: {e}")
-
+          logger.error(f"Error starting scheduler: {e}")
 
     def shutdown(self) -> None:
         """Shuts down the scheduler."""
@@ -86,14 +100,17 @@ class APSchedulerWrapper:
                   self._scheduler.remove_job(job.id)
               except Exception as remove_e:
                 logger.error(f"Failed to remove job id {job.id} {remove_e}")
+
     
     def start_and_process_jobs(self):
-        """Starts the scheduler and process jobs."""
-        try:
+      """Start the scheduler and process jobs."""
+      try:
+        if not self._jobs_loaded:
            self.start()
            self._process_all_jobs()
-        except Exception as e:
-           logger.error(f"Error during start and process jobs {e}")
+           self._jobs_loaded = True
+      except Exception as e:
+         logger.error(f"Error during start and process jobs {e}")
 def get_scheduler(uri: str) -> Scheduler:
     """Returns the scheduler instance."""
     return APSchedulerWrapper(uri)
