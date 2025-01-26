@@ -1,213 +1,17 @@
-# app/api/models/common.py
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Dict, Any, List, Optional
-
-class CronTrigger(BaseModel):
-    type: str = "cron"
-    args: Dict[str, Any] = Field(
-        default={},
-        description="Cron trigger arguments. Provide only necessary arguments",
-        examples=[
-            {"year": "2024"}, #run every year
-            {"month": "1"}, # run every january
-            {"day": "1"}, #run every 1st of the month
-            {"week": "1"}, # run every 1st week of month
-            {"day_of_week": "mon"}, #run every monday
-            {"hour": "10"}, #run every hour 10
-            {"minute": "30"},  # run every minute 30
-            {"second": "0"}, #run every second 0
-            {"start_date":"2024-01-01T10:00:00", "end_date":"2025-01-01T10:00:00"}, # run between these two dates
-            {"timezone": "UTC"}, #run in utc timezone
-            {"minute": "*/5"},  # Every 5 minutes
-            {"hour": 10, "minute": 30},  # At 10:30 AM
-            {"day_of_week": "mon-fri", "hour": 9} #Every weekday at 9am
-        ]
-    )
-    model_config = ConfigDict(
-      json_schema_extra={
-        "description":"A cron-based trigger to run the job",
-        "properties": {
-          "type": {
-            "enum": ["cron"],
-          },
-          "args":{
-           "description": "Cron arguments",
-            "type":"object",
-            "properties":{
-              "year":{
-                "type":"string",
-                "description":"Year to trigger on",
-                "default": "*",
-              },
-             "month":{
-                "type":"string",
-                "description":"Month to trigger on",
-                "default":"*"
-             },
-             "day":{
-                 "type":"string",
-                "description":"Day of month to trigger on",
-                "default":"*"
-             },
-             "week":{
-                "type":"string",
-                "description":"Week of the year to trigger on",
-                "default":"*"
-             },
-             "day_of_week":{
-                 "type":"string",
-                 "description":"Day of week to trigger on",
-                  "default":"*"
-             },
-             "hour":{
-                "type":"string",
-                "description":"Hour to trigger on",
-                 "default":"*"
-             },
-             "minute":{
-               "type":"string",
-                "description":"Minute to trigger on",
-                 "default":"*"
-             },
-              "second":{
-                "type":"string",
-                "description":"Second to trigger on",
-                "default":"*"
-              },
-             "start_date":{
-                "type":"string",
-                "format":"date-time",
-                "description":"Start date to trigger on",
-              },
-              "end_date":{
-                "type":"string",
-                 "format":"date-time",
-                "description":"End date to trigger on",
-              },
-              "timezone":{
-                "type":"string",
-                 "description":"Timezone to trigger on",
-                 "default":"UTC"
-             }
-            }
-          }
-        }
-      }
-    )
-
-class DateTrigger(BaseModel):
-  type: str = "date"
-  args: Dict[str, Any] = Field(
-      default={},
-      description="Date trigger arguments, specifically a run_date.",
-        examples=[
-            {"run_date": "2024-08-27T10:30:00", "timezone": "UTC"}
-          ]
-  )
-  model_config = ConfigDict(
-    json_schema_extra={
-      "description":"A date-based trigger to run the job once on specified date.",
-      "properties":{
-        "type":{
-           "enum": ["date"]
-        },
-        "args":{
-          "type":"object",
-           "properties":{
-              "run_date":{
-                  "type":"string",
-                   "format":"date-time",
-                  "description":"Date on which the job should be executed."
-             },
-              "timezone":{
-                "type":"string",
-                 "description":"Timezone to trigger on",
-                 "default":"UTC"
-             }
-           }
-         }
-      }
-   }
-  )
-
-class IntervalTrigger(BaseModel):
-  type: str = "interval"
-  args: Dict[str, Any] = Field(
-    default={},
-    description="Interval trigger arguments, provide only one of them. ",
-        examples=[
-            {"seconds": 10, "start_date":"2024-01-01T10:00:00", "end_date":"2025-01-01T10:00:00", "timezone": "UTC"}, # Every 10 seconds
-            {"minutes": 5},  # Every 5 minutes
-            {"hours": 1}, # Every hour
-            {"days": 1}, # Every day
-            {"weeks": 1} # Every week
-        ]
-  )
-  model_config = ConfigDict(
-    json_schema_extra={
-      "description":"An interval-based trigger to run the job repeatedly.",
-      "properties":{
-        "type":{
-           "enum": ["interval"]
-         },
-        "args":{
-          "type":"object",
-           "properties":{
-             "weeks":{
-               "type":"integer",
-                "description":"Number of weeks to trigger on"
-             },
-              "days":{
-               "type":"integer",
-                "description":"Number of days to trigger on"
-             },
-              "hours":{
-                "type":"integer",
-                 "description":"Number of hours to trigger on"
-             },
-              "minutes":{
-                "type":"integer",
-                 "description":"Number of minutes to trigger on"
-             },
-              "seconds":{
-                "type":"integer",
-                 "description":"Number of seconds to trigger on"
-             },
-             "start_date":{
-                "type":"string",
-                "format":"date-time",
-                 "description":"Start date to trigger on",
-             },
-              "end_date":{
-                "type":"string",
-                "format":"date-time",
-                "description":"End date to trigger on",
-             },
-              "timezone":{
-                "type":"string",
-                 "description":"Timezone to trigger on",
-                 "default":"UTC"
-             }
-           }
-        }
-      }
-    }
-  )
-
-class Trigger(BaseModel):
-    __root__: CronTrigger | DateTrigger | IntervalTrigger
-    model_config = ConfigDict(
-      json_schema_extra={
-        "description":"A trigger to run the job, can be of type cron, date or interval."
-      }
-    )
-	
-	
 # app/common/__init__.py
 # app/common/scheduler.py
 from typing import Protocol, Any, Callable
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.mongodb import MongoDBJobStore
+from apscheduler.executors.pool import ThreadPoolExecutor
+from apscheduler.job import Job
+import logging
+import traceback
+from threading import Lock
+from app.common.database import get_database_client
+
+logger = logging.getLogger("my_logger")
+
 
 class Scheduler(Protocol):
     def add_job(self, func: Callable, **kwargs: Any) -> None: ...
@@ -218,15 +22,28 @@ class Scheduler(Protocol):
     def update_job(self, job_id: str, **kwargs: Any) -> None: ...
 
 class APSchedulerWrapper:
-    """Wrapper class for APScheduler."""
-    _instance = None
+    _instance = None  # Holds the single instance
+    _lock = Lock()    # Thread-safe lock for initialization
 
-    def __new__(cls, uri: str) -> "APSchedulerWrapper":
-      if cls._instance is None:
-        cls._instance = super(APSchedulerWrapper, cls).__new__(cls)
-        jobstore = MongoDBJobStore(database="mydb", client_kwargs={"host": uri})
-        cls._instance._scheduler = AsyncIOScheduler(jobstores={'default': jobstore})
-      return cls._instance
+    def __new__(cls, uri: str, *args, **kwargs):
+        if not cls._instance:
+             with cls._lock:  # Ensure thread-safe initialization
+                if not cls._instance:
+                  cls._instance = super().__new__(cls)
+                  cls._instance.mongo_client = get_database_client(uri).get_client()  # MongoDB client
+                  cls._instance.job_store = MongoDBJobStore(client=cls._instance.mongo_client, database="mydb", collection="jobs")
+                  cls._instance._scheduler = AsyncIOScheduler(
+                      jobstores={"default": cls._instance.job_store},
+                      executors={"default": ThreadPoolExecutor(10)},  # Adjust thread pool size as needed
+                      job_defaults={
+                          "misfire_grace_time": None,  # No grace time for misfired jobs
+                          "coalesce": False,          # Don't combine missed executions
+                          "max_instances": 1          # Prevent overlapping job executions
+                      },
+                   )
+                  cls._instance.scheduler_running = False  # Track the running state
+                  cls._instance._jobs_loaded = False
+        return cls._instance
 
     def add_job(self, func: Callable, **kwargs: Any) -> None:
         """Adds a job to the scheduler."""
@@ -236,22 +53,65 @@ class APSchedulerWrapper:
         """Removes a job from the scheduler."""
         self._scheduler.remove_job(job_id)
 
-    def get_jobs(self) -> list[Any]:
-       """Gets all scheduled jobs."""
-       return self._scheduler.get_jobs()
+    def get_jobs(self) -> list[Job]:
+        """Gets all scheduled jobs."""
+        return self._scheduler.get_jobs()
 
     def update_job(self, job_id: str, **kwargs: Any) -> None:
         """Updates a scheduled job."""
         self._scheduler.modify_job(job_id, **kwargs)
-
+    
     def start(self) -> None:
         """Starts the scheduler."""
-        self._scheduler.start()
-    
+        try:
+          self._scheduler.start()
+        except Exception as e:
+          logger.error(f"Error starting scheduler: {e}")
+
     def shutdown(self) -> None:
         """Shuts down the scheduler."""
-        self._scheduler.shutdown()
+        try:
+            self._scheduler.shutdown()
+        except Exception as e:
+            logger.error(f"Error shutting down scheduler: {e}")
 
+    def _resolve_job_function(self, job: Job) -> Callable | None:
+      """Resolve and return function, handle errors and return None if its not resolvable"""
+      try:
+        if isinstance(job.func, str):
+          func_path = job.func.split(".")
+          module_name = ".".join(func_path[:-1])
+          function_name = func_path[-1]
+          module = __import__(module_name, fromlist=[function_name])
+          func = getattr(module, function_name)
+          return func
+        return job.func
+      except Exception as e:
+          logger.error(f"Failed to resolve job function for job id '{job.id}': {e}, {traceback.format_exc()}")
+          return None
+
+    def _process_all_jobs(self):
+      """Process all the jobs and remove stale jobs"""
+      jobs = self._scheduler.get_jobs()
+      for job in jobs:
+            func = self._resolve_job_function(job)
+            if func is None:
+              try:
+                  logger.error(f"Job with ID {job.id} is stale due to missing function definition, marking it disabled")
+                  self._scheduler.remove_job(job.id)
+              except Exception as remove_e:
+                logger.error(f"Failed to remove job id {job.id} {remove_e}")
+
+    
+    def start_and_process_jobs(self):
+      """Start the scheduler and process jobs."""
+      try:
+        if not self._jobs_loaded:
+           self.start()
+           self._process_all_jobs()
+           self._jobs_loaded = True
+      except Exception as e:
+         logger.error(f"Error during start and process jobs {e}")
 def get_scheduler(uri: str) -> Scheduler:
     """Returns the scheduler instance."""
     return APSchedulerWrapper(uri)
@@ -259,21 +119,25 @@ def get_scheduler(uri: str) -> Scheduler:
 from typing import Protocol, Any
 from pymongo import MongoClient
 from pymongo.database import Database
+from threading import Lock
+_mongo_client = None
+_mongo_lock = Lock()
 
 class DatabaseClient(Protocol):
     def get_client(self) -> Database: ...
 
 class MongoDBClient:
     """Wrapper class for MongoDB client."""
-
-    _instance = None
-
+    
     def __new__(cls, uri: str) -> "MongoDBClient":
-        if cls._instance is None:
-            cls._instance = super(MongoDBClient, cls).__new__(cls)
-            cls._instance.client = MongoClient(uri)
-            cls._instance.db = cls._instance.client.get_database("mydb")
-        return cls._instance
+        global _mongo_client
+        if _mongo_client is None:
+            with _mongo_lock:
+                 if _mongo_client is None:
+                    _mongo_client = super(MongoDBClient, cls).__new__(cls)
+                    _mongo_client.client = MongoClient(uri)
+                    _mongo_client.db = _mongo_client.client.get_database("mydb")
+        return _mongo_client
 
     def get_client(self) -> Database:
         """Returns the MongoDB client."""
@@ -289,6 +153,7 @@ from abc import ABC, abstractmethod
 from app.common.database import DatabaseClient
 import traceback
 from pymongo.database import Database
+from app.common.logger import logger
 
 T = TypeVar("T")
 
@@ -644,6 +509,7 @@ from app.common.monitor import get_monitor
 from pymongo.database import Database
 from contextlib import asynccontextmanager
 import traceback
+from app.common.logger import logger
 
 # Lifespan
 @asynccontextmanager
@@ -655,7 +521,7 @@ async def lifespan(app: FastAPI):
     app.scheduler = scheduler
     monitor = get_monitor(db_client)
     app.monitor = monitor
-    scheduler.start()
+    scheduler.start_and_process_jobs()
     yield
     scheduler.shutdown()
 
@@ -897,7 +763,8 @@ th, td {
 }
 
 th {
-    background-color: #f2f2f2;
+    background-color: #f2f2
+# app/api/template/css/style.css (Continued)
 }
 
 a {
@@ -1007,10 +874,219 @@ a:hover {
 # app/api/template/js
 # app/api/models/__init__.py
 # app/api/models/jobs/__init__.py
+# app/api/models/common.py
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Dict, Any, List, Optional
+
+class CronTrigger(BaseModel):
+    type: str = "cron"
+    args: Dict[str, Any] = Field(
+        default={},
+        description="Cron trigger arguments. Provide only necessary arguments",
+        examples=[
+            {"year": "2024"}, #run every year
+            {"month": "1"}, # run every january
+            {"day": "1"}, #run every 1st of the month
+            {"week": "1"}, # run every 1st week of month
+            {"day_of_week": "mon"}, #run every monday
+            {"hour": "10"}, #run every hour 10
+            {"minute": "30"},  # run every minute 30
+            {"second": "0"}, #run every second 0
+            {"start_date":"2024-01-01T10:00:00", "end_date":"2025-01-01T10:00:00"}, # run between these two dates
+            {"timezone": "UTC"}, #run in utc timezone
+            {"minute": "*/5"},  # Every 5 minutes
+            {"hour": 10, "minute": 30},  # At 10:30 AM
+            {"day_of_week": "mon-fri", "hour": 9} #Every weekday at 9am
+        ]
+    )
+    model_config = ConfigDict(
+      json_schema_extra={
+        "description":"A cron-based trigger to run the job",
+        "properties": {
+          "type": {
+            "enum": ["cron"],
+          },
+          "args":{
+           "description": "Cron arguments",
+            "type":"object",
+            "properties":{
+              "year":{
+                "type":"string",
+                "description":"Year to trigger on",
+                "default": "*",
+              },
+             "month":{
+                "type":"string",
+                "description":"Month to trigger on",
+                "default":"*"
+             },
+             "day":{
+                 "type":"string",
+                "description":"Day of month to trigger on",
+                "default":"*"
+             },
+             "week":{
+                "type":"string",
+                "description":"Week of the year to trigger on",
+                "default":"*"
+             },
+             "day_of_week":{
+                 "type":"string",
+                 "description":"Day of week to trigger on",
+                  "default":"*"
+             },
+             "hour":{
+                "type":"string",
+                "description":"Hour to trigger on",
+                 "default":"*"
+             },
+             "minute":{
+               "type":"string",
+                "description":"Minute to trigger on",
+                 "default":"*"
+             },
+              "second":{
+                "type":"string",
+                "description":"Second to trigger on",
+                "default":"*"
+              },
+             "start_date":{
+                "type":"string",
+                "format":"date-time",
+                "description":"Start date to trigger on",
+              },
+              "end_date":{
+                "type":"string",
+                 "format":"date-time",
+                "description":"End date to trigger on",
+              },
+              "timezone":{
+                "type":"string",
+                 "description":"Timezone to trigger on",
+                 "default":"UTC"
+             }
+            }
+          }
+        }
+      }
+    )
+
+class DateTrigger(BaseModel):
+  type: str = "date"
+  args: Dict[str, Any] = Field(
+      default={},
+      description="Date trigger arguments, specifically a run_date.",
+        examples=[
+            {"run_date": "2024-08-27T10:30:00", "timezone": "UTC"}
+          ]
+  )
+  model_config = ConfigDict(
+    json_schema_extra={
+      "description":"A date-based trigger to run the job once on specified date.",
+      "properties":{
+        "type":{
+           "enum": ["date"]
+        },
+        "args":{
+          "type":"object",
+           "properties":{
+              "run_date":{
+                  "type":"string",
+                   "format":"date-time",
+                  "description":"Date on which the job should be executed."
+             },
+              "timezone":{
+                "type":"string",
+                 "description":"Timezone to trigger on",
+                 "default":"UTC"
+             }
+           }
+         }
+      }
+   }
+  )
+
+class IntervalTrigger(BaseModel):
+  type: str = "interval"
+  args: Dict[str, Any] = Field(
+    default={},
+    description="Interval trigger arguments, provide only one of them. ",
+        examples=[
+            {"seconds": 10, "start_date":"2024-01-01T10:00:00", "end_date":"2025-01-01T10:00:00", "timezone": "UTC"}, # Every 10 seconds
+            {"minutes": 5},  # Every 5 minutes
+            {"hours": 1}, # Every hour
+            {"days": 1}, # Every day
+            {"weeks": 1} # Every week
+        ]
+  )
+  model_config = ConfigDict(
+    json_schema_extra={
+      "description":"An interval-based trigger to run the job repeatedly.",
+      "properties":{
+        "type":{
+           "enum": ["interval"]
+         },
+        "args":{
+          "type":"object",
+           "properties":{
+             "weeks":{
+               "type":"integer",
+                "description":"Number of weeks to trigger on"
+             },
+              "days":{
+               "type":"integer",
+                "description":"Number of days to trigger on"
+             },
+              "hours":{
+                "type":"integer",
+                 "description":"Number of hours to trigger on"
+             },
+              "minutes":{
+                "type":"integer",
+                 "description":"Number of minutes to trigger on"
+             },
+              "seconds":{
+                "type":"integer",
+                 "description":"Number of seconds to trigger on"
+             },
+             "start_date":{
+                "type":"string",
+                "format":"date-time",
+                 "description":"Start date to trigger on",
+             },
+              "end_date":{
+                "type":"string",
+                "format":"date-time",
+                "description":"End date to trigger on",
+             },
+              "timezone":{
+                "type":"string",
+                 "description":"Timezone to trigger on",
+                 "default":"UTC"
+             }
+           }
+        }
+      }
+    }
+  )
+
+class Trigger(BaseModel):
+    __root__: CronTrigger | DateTrigger | IntervalTrigger
+    model_config = ConfigDict(
+      json_schema_extra={
+        "description":"A trigger to run the job, can be of type cron, date or interval."
+      }
+    )
 # app/api/models/jobs/onboard.py
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
-from app.api.models.common import Trigger, JobDetails
+from app.api.models.common import Trigger
+
+class JobDetails(BaseModel):
+    func: str = Field(description="Full path to the job's function, e.g., app.batch.app1.job109.main")
+    args: Optional[List] = Field(default=None, description="List of positional arguments for the job function")
+    kwargs: Optional[Dict] = Field(default=None, description="Dictionary of keyword arguments for the job function")
+
 
 class OnboardJobModel(BaseModel):
     job_id: str = Field(description="Unique identifier for the job")
@@ -1021,7 +1097,6 @@ class OnboardJobModel(BaseModel):
     region: Optional[str] = Field(default=None, description="Region where the job runs")
     job_details: JobDetails = Field(description="Details of the job")
     trigger: Trigger = Field(description="Trigger configuration for the job")
-    
 # app/api/models/jobs/remove.py
 from pydantic import BaseModel, Field
 
@@ -1031,47 +1106,7 @@ class RemoveJobModel(BaseModel):
 # app/api/models/jobs/update.py
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
-
-class CronTrigger(BaseModel):
-    type: str = "cron"
-    args: Dict[str, Any] = Field(
-        default={},
-        description="Cron trigger arguments, like year, month, day, hour, minute, second, day_of_week.",
-        examples=[
-            {"minute": "*/5"},  # Every 5 minutes
-            {"hour": 10, "minute": 30},  # At 10:30 AM
-            {"day_of_week": "mon-fri", "hour": 9} #Every weekday at 9am
-        ]
-    )
-
-class DateTrigger(BaseModel):
-  type: str = "date"
-  args: Dict[str, Any] = Field(
-      default={},
-      description="Date trigger arguments, specifically a run_date.",
-      examples=[
-          {"run_date": "2024-08-27T10:30:00"}
-      ]
-  )
-
-class IntervalTrigger(BaseModel):
-  type: str = "interval"
-  args: Dict[str, Any] = Field(
-    default={},
-    description="Interval trigger arguments, seconds, minutes, hours, days",
-        examples=[
-            {"seconds": 10},  # Every 10 seconds
-            {"minutes": 5} # Every 5 minutes
-        ]
-  )
-
-class Trigger(BaseModel):
-    __root__: CronTrigger | DateTrigger | IntervalTrigger
-
-class JobDetails(BaseModel):
-    func: str = Field(description="Full path to the job's function, e.g., app.batch.app1.job109.main")
-    args: Optional[List] = Field(default=None, description="List of positional arguments for the job function")
-    kwargs: Optional[Dict] = Field(default=None, description="Dictionary of keyword arguments for the job function")
+from app.api.models.common import Trigger, JobDetails
 
 
 class UpdateJobModel(BaseModel):
@@ -1115,7 +1150,6 @@ async def onboard_job(job_data: OnboardJobModel,
     """Onboards a new job."""
     job_manager = JobManager(db, scheduler, monitor)
     return job_manager.onboard_job(job_data.dict())
-
 # app/api/routes/jobs/remove.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.models.jobs.remove import RemoveJobModel
@@ -1135,7 +1169,6 @@ async def remove_job(job_data: RemoveJobModel,
     """Removes a job."""
     job_manager = JobManager(db, scheduler, monitor)
     return job_manager.remove_job(job_data.job_id)
-
 # app/api/routes/jobs/update.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.models.jobs.update import UpdateJobModel
@@ -1155,7 +1188,6 @@ async def update_job(job_data: UpdateJobModel,
     """Updates a job."""
     job_manager = JobManager(db, scheduler, monitor)
     return job_manager.update_job(job_data.job_id, job_data.dict(exclude_none=True))
-
 # app/api/routes/jobs/list.py
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from app.api.models.jobs.list import ListJobQueryModel
@@ -1196,3 +1228,49 @@ async def list_jobs_post(
       return job_manager.list_jobs(query_params.dict(exclude_none=True))
     else:
       return job_manager.list_jobs()
+# app/common/logger.py
+import logging.config
+import json
+from typing import Any, Dict
+
+class JSONFormatter(logging.Formatter):
+    """Custom formatter to log in JSON."""
+    def format(self, record: logging.LogRecord) -> str:
+        log_data = {
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "name": record.name,
+            "timestamp": self.formatTime(record, self.datefmt),
+        }
+        if record.exc_info:
+          log_data["exc_info"] = self.formatException(record.exc_info)
+        if hasattr(record, 'extra'):
+           log_data.update(record.extra)
+        return json.dumps(log_data, default=str)
+
+logger_config = {
+    "version": 1,
+    "formatters": {
+        "json": {
+            "()": "app.common.logger.JSONFormatter",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+            "level": "DEBUG",
+        },
+    },
+    "loggers": {
+        "my_logger": {
+          "level":"DEBUG",
+          "handlers": ["console"]
+        }
+    },
+}
+
+logging.config.dictConfig(logger_config)
+
+logger = logging.getLogger("my_logger")
