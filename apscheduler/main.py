@@ -9,6 +9,7 @@ import logging
 import traceback
 from threading import Lock
 from app.common.database import get_database_client
+from fastapi import Depends
 
 logger = logging.getLogger("my_logger")
 
@@ -154,6 +155,7 @@ from app.common.database import DatabaseClient
 import traceback
 from pymongo.database import Database
 from app.common.logger import logger
+from fastapi import Depends
 
 T = TypeVar("T")
 
@@ -510,6 +512,7 @@ from pymongo.database import Database
 from contextlib import asynccontextmanager
 import traceback
 from app.common.logger import logger
+from fastapi import Depends
 
 # Lifespan
 @asynccontextmanager
@@ -583,12 +586,15 @@ app.include_router(list_route.router)
 # app/api/utils/__init__.py
 # app/api/utils/database.py
 from app.common.database import DatabaseClient, get_database_client
+from fastapi import Depends
 
 def get_database(uri: str) -> DatabaseClient:
     """Returns the Database client."""
     return get_database_client(uri)
 # app/api/utils/scheduler.py
 from app.common.scheduler import Scheduler, get_scheduler
+from fastapi import Depends
+
 
 def get_scheduler_client(uri: str) -> Scheduler:
     """Returns the Scheduler client."""
@@ -602,10 +608,11 @@ from app.common.scheduler import Scheduler
 from pymongo.database import Database
 from apscheduler.job import Job
 from datetime import datetime
+from fastapi import Depends
 
 class JobManager:
     """Manages job operations."""
-    def __init__(self, db_client: DatabaseClient, scheduler: Scheduler, monitor: Monitor):
+    def __init__(self, db_client: DatabaseClient = Depends(lambda: get_database("mongodb://localhost:27017")), scheduler: Scheduler = Depends(lambda: get_scheduler_client("mongodb://localhost:27017")), monitor: Monitor = Depends(lambda: get_monitor(get_database("mongodb://localhost:27017")))):
         """Initialize with dependencies."""
         self.db: Database = db_client.get_client()
         self.scheduler = scheduler
@@ -739,6 +746,8 @@ class JobManager:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error listing jobs: {e}")
 # app/api/template/css/style.css
 body {
+    font
+	# app/api/template/css/style.css (Continued)
     font-family: sans-serif;
 }
 
@@ -763,8 +772,7 @@ th, td {
 }
 
 th {
-    background-color: #f2f2
-# app/api/template/css/style.css (Continued)
+    background-color: #f2f2f2;
 }
 
 a {
