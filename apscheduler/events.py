@@ -8,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pydantic import BaseModel, Field
 import pymongo
 import time
+from datetime import datetime
 
 # Constants for MongoDB Configuration
 MONGODB_URI = "mongodb://localhost:27017/"  # Replace with your MongoDB URI
@@ -22,6 +23,7 @@ class SchedulerEvent(BaseModel):
     job_name: Optional[str] = None
     job_run_time: Optional[str] = None  # strftime("%Y-%m-%d %H:%M:%S")
     exception: Optional[str] = None
+    log_datetime: datetime = Field(default_factory=datetime.utcnow) # Add field for time.
 
 # 2. Function to Store Events in MongoDB
 async def store_event_in_mongodb(event: SchedulerEvent, mongodb_uri: str, database_name: str, collection_name: str):
@@ -50,10 +52,9 @@ async def scheduler_event_listener(event, app: FastAPI): # Access app.state here
        event_data["job_run_time"] = time.strftime("%Y-%m-%d %H:%M:%S", event.scheduled_run_time.timetuple())
     if event.exception:
         event_data["exception"] = str(event.exception)
-
-    scheduler_event = SchedulerEvent(**event_data)  # Create Pydantic model
-
-    await store_event_in_mongodb(scheduler_event, MONGODB_URI, DATABASE_NAME, EVENT_COLLECTION_NAME)
+        # Add the logging date
+        scheduler_event = SchedulerEvent(**event_data)  # Create Pydantic model
+        await store_event_in_mongodb(scheduler_event, MONGODB_URI, DATABASE_NAME, EVENT_COLLECTION_NAME)
 
 async def create_example(app: FastAPI):
     """Create sample item"""
@@ -67,8 +68,8 @@ async def lifespan(app: FastAPI):
     client = pymongo.MongoClient(MONGODB_URI)
     # You also need to set some options to client before you can call get_database
     db = client[DATABASE_NAME]
-    db[EVENT_COLLECTION_NAME].create_index([("_id", pymongo.ASCENDING)], unique=True)
-
+    db[EVENT_COLLECTION_NAME].create_index([("log_datetime", pymongo.ASCENDING)], expireAfterSeconds=86400)  #TTL setup code.
+    
     scheduler = AsyncIOScheduler(timezone="UTC")
     # Add it to scheduler for the database to have index before you call.
     app.state.mongodb_client = client
@@ -84,7 +85,18 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(my_job, 'interval', seconds=10)
 
     # Add event listener
-    scheduler.add_listener(lambda event: asyncio.create_task(scheduler_event_listener(event, app)), events.EVENT_ALL)
+    job_events_mask = (
+            events.EVENT_JOB_ADDED |
+            events.EVENT_JOB_MODIFIED |
+            events.EVENT_JOB_REMOVED |
+            events.EVENT_JOB_SUBMITTED |
+            events.EVENT_JOB_MAX_INSTANCES |
+            events.EVENT_JOB_EXECUTED |
+            events.EVENT_JOB_ERROR |
+            events.EVENT_JOB_MISSED
+    )
+
+    scheduler.add_listener(lambda event: asyncio.create_task(scheduler_event_listener(event, app)), job_events_mask)
 
     # Check for index after run.
 
