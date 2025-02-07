@@ -115,3 +115,32 @@ async def lifespan(app: FastAPI):
 
 # 4. Set Up the FastAPI App
 app = FastAPI(lifespan=lifespan)
+
+
+
+
+
+def get_event_name(event_code):
+    """Returns the name of the event based on the code."""
+    if event_code == events.EVENT_SCHEDULER_STARTED:
+        return "scheduler_started"
+    elif event_code == events.EVENT_SCHEDULER_SHUTDOWN:
+        return "scheduler_shutdown"
+    elif event_code == events.EVENT_JOB_ADDED:
+        return "job_added"
+    elif event_code == events.EVENT_JOB_MODIFIED:
+        return "job_modified"
+    elif event_code == events.EVENT_JOB_REMOVED:
+        return "job_removed"
+    elif event_code == events.EVENT_JOB_SUBMITTED:
+        return "job_submitted"
+    elif event_code == events.EVENT_JOB_MAX_INSTANCES:
+        return "job_max_instances"
+    elif event_code == events.EVENT_JOB_EXECUTED:
+        return "job_executed"
+    elif event_code == events.EVENT_JOB_ERROR:
+        return "job_error"
+    elif event_code == events.EVENT_JOB_MISSED:
+        return "job_missed"
+    else:
+        return "unknown_event"
