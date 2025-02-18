@@ -1,0 +1,33 @@
+(Start with a friendly greeting and thank you for the time):
+
+"Good morning/afternoon, everyone. Thank you for joining me today for this Proof of Concept demo."
+
+(Set the Stage - Problem Statement):
+
+"Currently, our batch jobs are running on physical virtual machines. This presents several challenges. VMs are resource-intensive, difficult to scale on demand, and complex to manage, leading to increased operational costs and slower response times to changing business needs."
+
+(Introduce the Solution - High-Level Overview):
+
+"To address these challenges, we've built a solution that migrates these batch jobs to OpenShift pods. This approach offers significant benefits in terms of scalability, resource utilization, and manageability. Our architecture leverages a robust combination of technologies:"
+
+(Highlight the Key Technologies):
+
+FastAPI: "We've chosen FastAPI as our web framework. Its high performance, ease of use, and automatic API documentation generation allow us to quickly build and manage the core scheduling logic and expose key functionalities through APIs." Mention a specific benefit FastAPI provides, e.g., "FastAPI's built-in data validation ensures the reliability of job definitions."
+
+APScheduler: "APScheduler handles the actual scheduling and execution of the batch jobs. Its flexibility in defining schedules (cron, intervals, etc.) allows us to accurately replicate existing job configurations." Mention a specific benefit APScheduler provides, e.g., "APScheduler's persistence features ensure that jobs are not lost in case of pod restarts."
+
+MongoDB (PyMongo): "MongoDB serves as our persistent job store and operational data store. It provides a flexible and scalable solution for storing job definitions, execution history, and any other data required by the batch jobs." Mention why MongoDB was chosen, e.g., "MongoDB's document-oriented nature allows us to easily store and query complex job configurations."
+
+OpenShift: "OpenShift provides the container orchestration platform. By containerizing our batch jobs into pods, we gain the benefits of automated deployment, scaling, and self-healing capabilities, making the system more resilient and cost-effective." Mention a specific benefit OpenShift provides, e.g., "OpenShift's built-in monitoring and logging tools provide valuable insights into job execution and overall system health."
+
+(Explain the Migration Goals):
+
+"The primary goals of this migration are to:"
+
+Reduce infrastructure costs: "By leveraging OpenShift's efficient resource utilization, we aim to lower the cost of running our batch jobs."
+
+Improve scalability: "OpenShift allows us to easily scale the number of pods running our batch jobs to meet fluctuating demands."
+
+Enhance resilience: "The self-healing capabilities of OpenShift ensure that jobs are automatically restarted in case of failures."
+
+Simplify management: "Centralized management of batch jobs through APIs and OpenShift's web console streamlines operations."
