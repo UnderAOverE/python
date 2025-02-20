@@ -11,23 +11,27 @@ import os
 # except ImportError:
 #     print("uvloop not found, using default event loop")
 
-async def process_chunk_in_process(filename, start, size, pattern1, pattern2, queue):
+def process_chunk_in_process(filename, start, size, pattern1, pattern2, queue):
     """
     Processes a chunk of the file in a separate process. This function is designed
     to be run within a process created by `aioprocessing`.  The result is placed on the queue.
     """
     try:
-        async with aiofiles.open(filename, mode='r') as f:
-            await f.seek(start)
-            chunk = await f.read(size)
-            lines = chunk.splitlines()
+        async def async_process():  # Define an async function inside
+            async with aiofiles.open(filename, mode='r') as f:
+                await f.seek(start)
+                chunk = await f.read(size)
+                lines = chunk.splitlines()
 
-        count = 0
-        for line in lines:
-            if re.search(pattern1, line):
-                if re.search(pattern2, line):
-                    count += 1
-        queue.put(count)  # Put the result on the queue
+            count = 0
+            for line in lines:
+                if re.search(pattern1, line):
+                    if re.search(pattern2, line):
+                        count += 1
+            queue.put(count)  # Put the result on the queue
+
+        asyncio.run(async_process()) # Run async_process
+
     except Exception as e:
         print(f"Process {os.getpid()} encountered an error: {e}") # Use getpid() for process ID
         queue.put(0)  # Put a 0 on the queue to signal an error (or handle it differently)
