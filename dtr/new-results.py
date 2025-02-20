@@ -3,6 +3,7 @@ import aiofiles
 import re
 import aioprocessing as mp  # Requires: pip install aioprocessing
 import os
+
 # try:
 #     import uvloop  # Requires: pip install uvloop
 #     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -10,10 +11,10 @@ import os
 # except ImportError:
 #     print("uvloop not found, using default event loop")
 
-async def process_chunk_in_process(filename, start, size, pattern1, pattern2):
+async def process_chunk_in_process(filename, start, size, pattern1, pattern2, queue):
     """
     Processes a chunk of the file in a separate process. This function is designed
-    to be run within a process created by `aioprocessing`.
+    to be run within a process created by `aioprocessing`.  The result is placed on the queue.
     """
     try:
         async with aiofiles.open(filename, mode='r') as f:
@@ -26,10 +27,11 @@ async def process_chunk_in_process(filename, start, size, pattern1, pattern2):
             if re.search(pattern1, line):
                 if re.search(pattern2, line):
                     count += 1
-        return count
+        queue.put(count)  # Put the result on the queue
     except Exception as e:
         print(f"Process {os.getpid()} encountered an error: {e}") # Use getpid() for process ID
-        return 0  # Or raise the exception, depending on your error handling needs
+        queue.put(0)  # Put a 0 on the queue to signal an error (or handle it differently)
+
 
 async def count_pattern_occurrences_async_multiprocess(filename, pattern1, pattern2, chunk_size=4096, num_processes=4):
     """
@@ -45,27 +47,24 @@ async def count_pattern_occurrences_async_multiprocess(filename, pattern1, patte
     # Python 3.9 compatible asyncio.gather:
     for start in chunk_starts:
         size = min(chunk_size, file_size - start)
-        # Use aioprocessing.AioProcess to create a new process that runs the coroutine.
-        # AioProcess is designed to work directly with asyncio coroutines.  We pass the coroutine *function* to
-        # AioProcess, and then await the returned future (i.e. we await AioProcess itself).
-        process = mp.AioProcess(target=process_chunk_in_process, args=(filename, start, size, pattern1, pattern2))
-        tasks.append(process.coro)
+        # Create a queue for each process to receive the result
+        queue = mp.Queue()
+        # Use aioprocessing.AioProcess to create a new process
+        process = mp.AioProcess(target=process_chunk_in_process, args=(filename, start, size, pattern1, pattern2, queue))
+        process.start()
+        tasks.append( (process, queue) )
 
-    results = await asyncio.gather(*tasks, return_exceptions=True) # Await all processes
+    results = []
+    for process, queue in tasks:
+        result = await asyncio.get_event_loop().run_in_executor(None, queue.get) # Run a blocking function so we don't block main event loop
+        results.append(result)
+        process.join() # Important to clean up the process so it doesn't become a zombie
 
     for result in results:
         if isinstance(result, Exception):
             print(f"A task raised an exception: {type(result).__name__}, {result}") # Show any errors that arise
         else:
            total_count += result # Count all lines
-
-    # Python 3.11+ asyncio.TaskGroup (commented out):
-    # async with asyncio.TaskGroup() as tg:
-    #     for start in chunk_starts:
-    #         size = min(chunk_size, file_size - start)
-    #         process = mp.AioProcess(target=process_chunk_in_process,
-    #                                 args=(filename, start, size, pattern1, pattern2))
-    #         tg.create_task(process, name=f"Chunk {start}")
 
     return total_count
 
