@@ -7,11 +7,11 @@ import datetime
 import argparse
 import glob
 import subprocess
-import shlex
 
 VALID_SEARCHHEAD_IPS = ["10.1.2.3", "10.1.22.113", "10.21.22.39"]  # Add your list of valid IPs
 
-NORMALIZED_RESULTS_PATTERN = "normalizedResults= []" #Constant Pattern
+NORMALIZED_RESULTS_PATTERN = "normalizedResults= []"  # Constant Pattern
+
 def parse_arguments():
     """Parses command-line arguments for time window."""
     parser = argparse.ArgumentParser(description="Parse utils.log and count occurrences by search head using grep within a time window.")
@@ -33,7 +33,6 @@ def calculate_time_delta(time_window_str):
     except ValueError as e:
         raise ValueError(f"Invalid time window format: {time_window_str}.  Use a number followed by 'm' or 'h'. e.g., 30m") from e
 
-
 def extract_searchhead_ip(message):
     """Extracts the search head IP address from the log message."""
     searchhead_match = re.search(r'searchhead=([\d.]+)/', message)
@@ -42,7 +41,6 @@ def extract_searchhead_ip(message):
         if ip_address in VALID_SEARCHHEAD_IPS:  # Check if IP is valid
             return ip_address
     return 'Unknown'  # Return "Unknown" if not found or not valid
-
 
 def count_pattern_occurrences_with_grep(log_file, log_date_str, normalized_results_pattern):
     """
@@ -84,37 +82,41 @@ def process_log_file(log_file, time_delta):
                     message = log_entry.get('message', '')  # Ensure message exists, otherwise blank string
 
                     if not log_date_str:
-                        continue # Skip if log_date is missing
+                        continue  # Skip if log_date is missing
 
-                    log_date = datetime.datetime.fromisoformat(log_date_str.replace('Z', '+00:00')) # Handle the Z notation for UTC.
+                    log_date = datetime.datetime.fromisoformat(log_date_str.replace('Z', '+00:00'))  # Handle the Z notation for UTC.
                     if now - log_date <= time_delta:
+                        searchhead_ip = extract_searchhead_ip(message)
+                        if searchhead_ip != 'Unknown':
+                            # Extract BTNAMEs only from the part before "searchhead="
+                            try:
+                                before_searchhead, _ = message.split("searchhead=", 1) # Capture only the portion that occurs before seachhead
+                            except ValueError:
+                                before_searchhead = message # Whole message
 
-                       searchhead_ip = extract_searchhead_ip(message)
-                       if searchhead_ip != 'Unknown':
+                            btnames = re.findall(r"\[([^\]]+)\]", before_searchhead) # Only btname and nothing else
 
-                         # Extract BTNAMEs only if searchhead_ip is valid
-                         btnames = re.findall(r"\[([^\]]+)\]", message) # Extract content inside []
+                            if searchhead_ip not in search_head_counts:
+                                search_head_counts[searchhead_ip] = {}
 
-                         if searchhead_ip not in search_head_counts:
-                             search_head_counts[searchhead_ip] = {}
-
-                         count = count_pattern_occurrences_with_grep(log_file, line, NORMALIZED_RESULTS_PATTERN)
-                         for btname in btnames:
-                            if btname not in search_head_counts[searchhead_ip]:
-                                 search_head_counts[searchhead_ip][btname] = 0 # Initialize
-                            search_head_counts[searchhead_ip][btname] += int(count)
+                            count = count_pattern_occurrences_with_grep(log_file, line, NORMALIZED_RESULTS_PATTERN)
+                            for btname in btnames:
+                                btname = btname.strip() # Strip any leading/trailing
+                                if btname not in search_head_counts[searchhead_ip]:
+                                     search_head_counts[searchhead_ip][btname] = 0  # Initialize
+                                search_head_counts[searchhead_ip][btname] += int(count)
 
                 except json.JSONDecodeError:
                     print(f"Skipping invalid JSON line in {log_file}: {line.strip()}")
                 except ValueError as e:
                     print(f"Skipping line in {log_file} due to date parsing error: {e}")
                 except Exception as e:
-                    print(f"Error processing line in {log_file}: {e}") # Other errors
+                    print(f"Error processing line in {log_file}: {e}")  # Other errors
 
     except FileNotFoundError:
         print(f"Log file not found: {log_file}")
     except Exception as e:
-        print(f"Error processing log file {log_file}: {e}") # Generic error, include file name.
+        print(f"Error processing log file {log_file}: {e}")  # Generic error, include file name.
 
     return search_head_counts
 
