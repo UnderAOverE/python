@@ -9,13 +9,13 @@ import glob
 import subprocess
 import shlex
 
+VALID_SEARCHHEAD_IPS = ["10.1.2.3", "10.1.22.113", "10.21.22.39"]  # Add your list of valid IPs
+
+NORMALIZED_RESULTS_PATTERN = "normalizedResults= []" #Constant Pattern
 def parse_arguments():
-    """Parses command-line arguments for time window and patterns."""
+    """Parses command-line arguments for time window."""
     parser = argparse.ArgumentParser(description="Parse utils.log and count occurrences by search head using grep within a time window.")
     parser.add_argument("time_window", type=str, help="Time window (e.g., '30m', '1h', '24h')")
-    parser.add_argument("--searchhead_pattern", type=str, default="searchhead=", help="Pattern for identifying search head (default: searchhead=)")
-    parser.add_argument("--normalized_results_pattern", type=str, default="normalizedResults= []", help="Pattern 2 (default: normalizedResults= [])")
-
     return parser.parse_args()
 
 def calculate_time_delta(time_window_str):
@@ -37,7 +37,12 @@ def calculate_time_delta(time_window_str):
 def extract_searchhead_ip(message):
     """Extracts the search head IP address from the log message."""
     searchhead_match = re.search(r'searchhead=([\d.]+)/', message)
-    return searchhead_match.group(1) if searchhead_match else 'Unknown'
+    if searchhead_match:
+        ip_address = searchhead_match.group(1)
+        if ip_address in VALID_SEARCHHEAD_IPS:  # Check if IP is valid
+            return ip_address
+    return 'Unknown'  # Return "Unknown" if not found or not valid
+
 
 def count_pattern_occurrences_with_grep(log_file, log_date_str, normalized_results_pattern):
     """
@@ -65,7 +70,7 @@ def count_pattern_occurrences_with_grep(log_file, log_date_str, normalized_resul
         return 0
 
 
-def process_log_file(log_file, time_delta, searchhead_pattern, normalized_results_pattern):
+def process_log_file(log_file, time_delta):
     """Processes a single log file and extracts relevant data."""
     search_head_counts = {}
     now = datetime.datetime.now(datetime.timezone.utc)  # Current time in UTC
@@ -84,16 +89,16 @@ def process_log_file(log_file, time_delta, searchhead_pattern, normalized_result
                     log_date = datetime.datetime.fromisoformat(log_date_str.replace('Z', '+00:00')) # Handle the Z notation for UTC.
                     if now - log_date <= time_delta:
 
-                      if searchhead_pattern in message:
+                       searchhead_ip = extract_searchhead_ip(message)
+                       if searchhead_ip != 'Unknown':
 
-                         # Extract BTNAMEs only if "searchhead=" is present.
-                         btnames = re.findall(r"\[([^\]]+)\]", message.split(searchhead_pattern)[0]) # Extract content inside []
-                         searchhead_ip = extract_searchhead_ip(message)
+                         # Extract BTNAMEs only if searchhead_ip is valid
+                         btnames = re.findall(r"\[([^\]]+)\]", message) # Extract content inside []
 
                          if searchhead_ip not in search_head_counts:
                              search_head_counts[searchhead_ip] = {}
 
-                         count = count_pattern_occurrences_with_grep(log_file, line, normalized_results_pattern)
+                         count = count_pattern_occurrences_with_grep(log_file, line, NORMALIZED_RESULTS_PATTERN)
                          for btname in btnames:
                             if btname not in search_head_counts[searchhead_ip]:
                                  search_head_counts[searchhead_ip][btname] = 0 # Initialize
@@ -126,7 +131,7 @@ def main():
     all_search_head_counts = {}
 
     for log_file in log_files:
-        search_head_counts = process_log_file(log_file, time_delta, args.searchhead_pattern, args.normalized_results_pattern)  # Process the log file
+        search_head_counts = process_log_file(log_file, time_delta)  # Process the log file
 
         # Merge the results from each file
         for searchhead, btname_counts in search_head_counts.items():
