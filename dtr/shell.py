@@ -4,22 +4,45 @@ import subprocess
 import os
 import shlex  # For safely joining shell arguments
 
-def count_pattern_occurrences_with_grep(filename, pattern_list, pattern2):
+def get_bash_executable():
     """
-    Uses grep to count occurrences of pattern2 within lines matching each pattern in pattern_list individually.
+    Dynamically determines the path to the bash executable using 'which bash'.
+    Returns None if bash is not found.
     """
+    try:
+        process = subprocess.Popen(['which', 'bash'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        if stdout:
+            return stdout.decode().strip()
+        else:
+            print("bash not found in PATH.")
+            return None
+    except FileNotFoundError:
+        print("which command not found. Assuming /bin/bash.")
+        return '/bin/bash' # Reasonable default
+    except Exception as e:
+        print(f"Error determining bash path: {e}")
+        return None
+
+def count_pattern_occurrences_with_grep(filename, pattern_list, pattern2, bash_executable=None):
+    """
+    Uses grep to count occurrences of pattern2 within lines matching each pattern in pattern_list.
+    """
+
+    if bash_executable is None:
+      bash_executable = get_bash_executable()
+      if bash_executable is None:
+        print("Cannot proceed without a bash executable.")
+        return {}
+
     results = {}  # Store the results for each pattern
     try:
         for pattern1 in pattern_list:
-            # Build the grep command pipeline:
-            # grep "pattern1" filename | grep "pattern2" | wc -l
-            # command = f"grep '{pattern1}' '{filename}' | grep '{pattern2}' | wc -l"  # Potential security issue with shell=True
-
             # Construct the command as a list and shell escaping for all the arguments
             command = ['grep', pattern1, filename, '|', 'grep', pattern2, '|', 'wc', '-l'] # Shell must exists, and it's not ideal.
 
             # Execute the command and capture the output
-            process = subprocess.Popen(" ".join(map(shlex.quote, command)), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash') # Specifying what shell to use
+            process = subprocess.Popen(" ".join(map(shlex.quote, command)), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable=bash_executable) # Use dynamically determined bash
 
             # Get the output and error streams
             stdout, stderr = process.communicate()
