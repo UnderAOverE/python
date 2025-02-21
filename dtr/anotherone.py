@@ -68,7 +68,7 @@ def count_pattern_occurrences_with_grep(log_file, log_date_str, normalized_resul
 
 def process_log_file(log_file, time_delta):
     """Processes a single log file and extracts relevant data."""
-    log_entries = []  # List to store log entries for the current file
+    log_entries = {}  # Dictionary to store entries grouped by searchhead
     now_utc = datetime.datetime.now(pytz.utc)  # Current time in UTC
 
     try:
@@ -101,12 +101,15 @@ def process_log_file(log_file, time_delta):
                             for btname in btnames:
                                 btname = btname.strip()
 
-                                if count > 0:  # Add only if count is greater than 0
-                                    # ********** CHANGE: Create a BTNAME entry WITHOUT the searchhead **********
-                                    log_entries.append({
+                                if searchhead_ip not in log_entries:
+                                    log_entries[searchhead_ip] = []
+
+                                if count > 0:
+                                    log_entries[searchhead_ip].append({
                                         "btname": btname, #BTNAME
                                         "count": count
                                     })
+
 
                 except json.JSONDecodeError:
                     print(f"Skipping invalid JSON line in {log_file}: {line.strip()}")
@@ -146,27 +149,23 @@ def main():
     for log_file in log_files:
         log_entries = process_log_file(log_file, time_delta)
 
-        # ********** CHANGE: Group entries by searchhead **********
-        for entry in log_entries:
-            searchhead_ip = extract_searchhead_ip(entry["btname"]) #It cannot extract like this
+        # Combine log entries
+        for searchhead_ip, entries in log_entries.items(): # Iterate through each of the IPs.
+            if searchhead_ip not in all_search_head_counts: # Check if the search IP already exists
+                all_search_head_counts[searchhead_ip] = [] # If not then create new list
 
-            if searchhead_ip not in all_search_head_counts:
-                all_search_head_counts[searchhead_ip] = []  # Initialize as a list
+            all_search_head_counts[searchhead_ip].extend(entries) # Then extend and append the list
 
-            all_search_head_counts[searchhead_ip].append(entry)
-
-    # ********** CHANGE: Restructure data for the final output **********
-    final_output = []
+    final_output = [] #Create empty list
     for searchhead, btname_entries in all_search_head_counts.items():
          if searchhead in VALID_SEARCHHEAD_IPS: # Check if the searchhead is found and if it meets your requirements
-
               total_occurrences = sum(entry["count"] for entry in btname_entries) # Calculate total occurences from list of btname
               final_output.append({
                   "searchhead": searchhead,
                   "total_occurrences": total_occurrences,
                   "btnames": btname_entries  # Use the list of BTNAME entries
+              }) # Append everything in the list, including all of the BT Names
 
-              })
 
 
     # Print the results in JSON format
