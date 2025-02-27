@@ -1,0 +1,38 @@
+[
+  {
+    "job_name": "batch_process_1.py",
+    "maximum_runtime_in_seconds": 3600,
+    "username": "user1",
+    "email": ["user1@example.com", "admin@example.com"]
+  },
+  {
+    "job_name": "data_import.py",
+    "maximum_runtime_in_seconds": 7200,
+    "username": "data_team",
+    "email": ["data_team@example.com"]
+  },
+  {
+    "job_name": "report_generator.py",
+    "maximum_runtime_in_seconds": 1800,
+    "username": "reporting",
+    "email": ["reporting@example.com", "alerts@example.com"]
+  },
+  {
+    "job_name": "cleanup_logs.py",
+    "maximum_runtime_in_seconds": 600,
+    "username": "system",
+    "email": ["admin@example.com"]
+  },
+  {
+    "job_name": "daily_backup.sh",
+    "maximum_runtime_in_seconds": 10800,
+    "username": "backup",
+    "email": ["backup_team@example.com", "alerts@example.com"]
+  },
+  {
+    "job_name": "long_running_analysis.R",
+    "maximum_runtime_in_seconds": 86400,
+    "username": "analyst",
+    "email": ["analyst@example.com"]
+  }
+]
