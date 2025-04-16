@@ -1,0 +1,153 @@
+{
+	"default_environment": "development",
+	"environments": {
+		"development": {
+			"description": "Schema for Development Environment",
+			"databases": {
+				"app_data_dev": {
+					"collections": {
+						"users": {
+							"indexes": [
+								{
+									"keys": [
+										[
+											"email",
+											"ASCENDING"
+										]
+									],
+									"name": "email_unique_idx",
+									"unique": true
+								},
+								{
+									"keys": [
+										[
+											"last_login",
+											"DESCENDING"
+										]
+									],
+									"name": "last_login_idx"
+								}
+							]
+						},
+						"logs": {
+							"capped": {
+								"size": 10485760,
+								"max": 10000
+							},
+							"indexes": [
+								{
+									"keys": [
+										[
+											"timestamp",
+											"DESCENDING"
+										]
+									],
+									"name": "log_timestamp_idx"
+								},
+								{
+									"keys": [
+										[
+											"expireAt",
+											"ASCENDING"
+										]
+									],
+									"name": "log_ttl_idx",
+									"expire_after_seconds": 86400
+								}
+							]
+						},
+						"audit_trail": {
+							"comment": "Collection created by schema tool, no initial indexes"
+						}
+					}
+				},
+				"empty_db_dev": {
+					"description": "This database has no collections defined."
+				}
+			}
+		},
+		"production": {
+			"description": "Schema for Production Environment",
+			"databases": {
+				"app_data_prod": {
+					"collections": {
+						"users": {
+							"indexes": [
+								{
+									"keys": [
+										[
+											"email",
+											"ASCENDING"
+										]
+									],
+									"name": "email_unique_idx",
+									"unique": true,
+									"background": true
+								},
+								{
+									"keys": [
+										[
+											"last_login",
+											"DESCENDING"
+										]
+									],
+									"name": "last_login_idx",
+									"background": true
+								}
+							]
+						},
+						"logs": {
+							"capped": {
+								"size": 1073741824,
+								"max": 1000000
+							},
+							"indexes": [
+								{
+									"keys": [
+										[
+											"timestamp",
+											"DESCENDING"
+										]
+									],
+									"name": "log_timestamp_idx",
+									"background": true
+								},
+								{
+									"keys": [
+										[
+											"expireAt",
+											"ASCENDING"
+										]
+									],
+									"name": "log_ttl_idx",
+									"expire_after_seconds": 604800,
+									"background": true
+								}
+							]
+						},
+						"audit_trail": {
+							"comment": "Production audit trail"
+						}
+					}
+				},
+				"reporting_prod": {
+					"collections": {
+						"daily_sales": {
+							"indexes": [
+								{
+									"keys": [
+										[
+											"date",
+											"DESCENDING"
+										]
+									],
+									"name": "sales_date_idx"
+								}
+							]
+						}
+					}
+				}
+			}
+		}
+	}
+}
