@@ -1,0 +1,49 @@
+{
+	"default_environment": "development",
+	"environments": {
+		"development": {
+			"description": "Local/staging dev connection settings",
+			"allowed_server_envs": [
+				"development",
+				"local",
+				"ci"
+			],
+			"server_uris": [
+				"mongodb://localhost:27017/"
+			],
+			"credentials": {
+				"username": "dev_user",
+				"password_env_var": "MONGO_DEV_PASSWORD"
+			}
+		},
+		"staging": {
+			"description": "Staging environment connection settings",
+			"allowed_server_envs": [
+				"staging",
+				"ci"
+			],
+			"server_uris": [
+				"mongodb://staging_user:<PASSWORD>@mongo-stg.example.com:27017/"
+			],
+			"credentials": {
+				"username": "staging_user",
+				"password_env_var": "MONGO_STAGING_PASSWORD",
+				"auth_source": "admin"
+			}
+		},
+		"production": {
+			"description": "Production environment connection settings",
+			"allowed_server_envs": [
+				"production"
+			],
+			"server_uris": [
+				"mongodb://prod_user:<PASSWORD>@mongo1.example.com:27017,mongo2.example.com:27017/?replicaSet=myReplicaSet&authSource=admin"
+			],
+			"credentials": {
+				"username": "prod_user",
+				"password_env_var": "MONGO_PROD_PASSWORD",
+				"auth_source": "admin"
+			}
+		}
+	}
+}
