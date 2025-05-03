@@ -1,0 +1,50 @@
+# .env
+
+# General
+APP_ENV=development # Or 'production', 'staging', etc.
+# Use absolute paths or paths relative to the project root if needed
+# Or configure these directly if they don't change often
+# COMMON_DIRECTORY=Common
+# HOME_DIRECTORY=openshift
+API_CA_CERTIFICATES=Common/lib/ca-prod.pem
+
+# Mongo Settings
+MONGO_CONFIG_PATH=openshift/configs/mongo.json
+MONGO_ENVIRONMENT=global
+
+# API Settings
+# Separate components for flexibility
+OPENSHIFT_CLUSTER_DOMAIN=mycluster.example.com
+OPENSHIFT_API_PORT=443 # Default HTTPS port
+API_TIMEOUT=300
+
+# DevOps URLs (Assuming these are fixed)
+GLOBAL_DIRECTORY_URL=https://devops.com/globaldirectory/users
+EVENT_DH_API_URL=https://devops.com/api/eventdashboard
+
+# ServiceNow Settings
+SNOW_INC_PRODUCTION_API_URL=https://devops.com/api/v1/ServiceNow/CreateInc
+SNAS_CREATE_INC_PRODUCTION_API_URL=https://devops.com/api/v1/ServiceNow/CreateInckafka
+SNAS_FETCH_INC_PRODUCTION_API_URL=https://devops.com/api/v1/ServiceNow/FetchInckafka
+# SECRET! Load from env var or secrets manager in production
+SNOW_SECURE_VERIFICATION_TOKEN="your_real_token_here" # Use quotes if value contains special chars
+
+# ServiceNow Defaults (can still be overridden in code if needed)
+SNOW_DEFAULT_ASSIGNMENT_GROUP=DefaultAssignmentGroup
+SNOW_DEFAULT_IMPACT=2
+SNOW_DEFAULT_URGENCY=2
+SNOW_DEFAULT_PRIMARY_APP=DefaultAppName
+SNOW_DEFAULT_PRIMARY_APP_INSTANCE_ID=DefaultSOEID
+SNOW_DEFAULT_PRIMARY_APP_INSTANCE_NAME=DefaultApp
+SNAS_DEFAULT_LABEL=default_test
+SNAS_DEFAULT_EMAIL=default_email@host.com
+
+# Email Settings
+SNOW_EMAIL_SUPPORT=snowSupport@email.com
+SNOW_EMAIL_ASSIGNMENT=snowAssignment@email.com
+# For lists, use comma-separated values (or handle JSON string in advanced cases)
+SNOW_EMAIL_TO_ADDRESSES=assign1@email.com,assign2@email.com
+
+# OpenShift Base URLs (Templates - project name added at runtime)
+OPENSHIFT_API_BASE_URL=https://api.mycluster.example.com:6443 # Example K8s API URL if needed, adjust
+OPENSHIFT_PROJECTS_BASE_URL=https://projects.openshift.io # Or your specific base URL
