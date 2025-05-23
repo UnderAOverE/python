@@ -1,0 +1,251 @@
+# ====================== models.py ======================
+from pydantic import BaseModel, Field
+from bson import ObjectId
+from typing import Optional
+
+
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if not ObjectId.is_valid(v):
+            raise ValueError("Invalid ObjectId")
+        return ObjectId(str(v))
+
+
+class User(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id")
+    name: str
+    email: str
+
+    class Config:
+        json_encoders = {ObjectId: str}
+        arbitrary_types_allowed = True
+
+
+class Product(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id")
+    name: str
+    price: float
+
+    class Config:
+        json_encoders = {ObjectId: str}
+        arbitrary_types_allowed = True
+
+
+# ====================== base_repository.py ======================
+from typing import TypeVar, Generic, Type, Optional, List
+from models import BaseModel, ObjectId
+
+T = TypeVar("T", bound=BaseModel)
+
+class BaseRepository(Generic[T]):
+    async def find_by_id(self, id: str) -> Optional[T]: ...
+    async def find_all(self) -> List[T]: ...
+    async def insert(self, data: T) -> str: ...
+    async def update(self, id: str, data: dict) -> bool: ...
+    async def delete_by_id(self, id: str) -> bool: ...
+
+
+# ====================== repositories.py ======================
+from bson import ObjectId
+from base_repository import BaseRepository
+from typing import Type, List, Optional
+from models import User, Product
+
+# Async Repository (Motor)
+class AsyncRepository(BaseRepository):
+    def __init__(self, collection, model_cls: Type):
+        self.collection = collection
+        self.model_cls = model_cls
+
+    async def find_by_id(self, id: str) -> Optional:
+        doc = await self.collection.find_one({"_id": ObjectId(id)})
+        return self.model_cls(**doc) if doc else None
+
+    async def find_all(self) -> List:
+        return [self.model_cls(**doc async for doc in self.collection.find())]
+
+    async def insert(self, data) -> str:
+        result = await self.collection.insert_one(data.dict(by_alias=True))
+        return str(result.inserted_id)
+
+    async def update(self, id: str, data: dict) -> bool:
+        result = await self.collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+        return result.modified_count > 0
+
+    async def delete_by_id(self, id: str) -> bool:
+        result = await self.collection.delete_one({"_id": ObjectId(id)})
+        return result.deleted_count > 0
+
+
+# Sync Repository (PyMongo)
+class SyncRepository(BaseRepository):
+    def __init__(self, collection, model_cls: Type):
+        self.collection = collection
+        self.model_cls = model_cls
+
+    async def find_by_id(self, id: str) -> Optional:
+        doc = self.collection.find_one({"_id": ObjectId(id)})
+        return self.model_cls(**doc) if doc else None
+
+    async def find_all(self) -> List:
+        return [self.model_cls(**doc) for doc in self.collection.find()]
+
+    async def insert(self, data) -> str:
+        result = self.collection.insert_one(data.dict(by_alias=True))
+        return str(result.inserted_id)
+
+    async def update(self, id: str, data: dict) -> bool:
+        result = self.collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+        return result.modified_count > 0
+
+    async def delete_by_id(self, id: str) -> bool:
+        result = self.collection.delete_one({"_id": ObjectId(id)})
+        return result.deleted_count > 0
+
+
+# ====================== services.py ======================
+from models import User, Product
+from typing import List, Optional
+from base_repository import BaseRepository
+
+class ProductService:
+    def __init__(self, repo: BaseRepository[Product]):
+        self.repo = repo
+
+    async def get_products(self) -> List[Product]:
+        return await self.repo.find_all()
+
+
+class UserService:
+    def __init__(self, repo: BaseRepository[User], product_service: ProductService):
+        self.repo = repo
+        self.product_service = product_service
+
+    async def create_user(self, name: str, email: str) -> str:
+        return await self.repo.insert(User(name=name, email=email))
+
+    async def get_user(self, user_id: str) -> Optional[User]:
+        return await self.repo.find_by_id(user_id)
+
+    async def get_user_products(self, user_id: str) -> List[Product]:
+        user = await self.repo.find_by_id(user_id)
+        if user:
+            return await self.product_service.get_products()
+        return []
+
+
+# ====================== mongo_client.py ======================
+from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
+
+def get_client(use_motor=True):
+    if use_motor:
+        return AsyncIOMotorClient("mongodb://localhost:27017")
+    else:
+        return MongoClient("mongodb://localhost:27017")
+
+
+# ====================== main.py ======================
+import asyncio
+from mongo_client import get_client
+from repositories import AsyncRepository, SyncRepository
+from models import User, Product
+from services import UserService, ProductService
+
+async def main(use_motor=True):
+    client = get_client(use_motor)
+    db = client["mydb"]
+
+    RepoClass = AsyncRepository if use_motor else SyncRepository
+
+    user_repo = RepoClass(db["users"], User)
+    product_repo = RepoClass(db["products"], Product)
+
+    product_service = ProductService(product_repo)
+    user_service = UserService(user_repo, product_service)
+
+    # Create user
+    user_id = await user_service.create_user("Alice", "alice@example.com")
+    print("Created user ID:", user_id)
+
+    # List products via service-to-service call
+    products = await user_service.get_user_products(user_id)
+    print("User's products:", products)
+
+if __name__ == "__main__":
+    asyncio.run(main(use_motor=True))  # change to False to use PyMongo
+
+
+
+
+
+import pytest
+import asyncio
+from unittest.mock import AsyncMock, MagicMock
+
+from models import User, Product
+from services import UserService, ProductService
+
+
+# ---------------- Helpers ----------------
+
+@pytest.fixture
+def fake_users():
+    return [
+        User(name="John", email="john@example.com", id=None),
+        User(name="Jane", email="jane@example.com", id=None),
+    ]
+
+@pytest.fixture
+def fake_products():
+    return [
+        Product(name="Phone", price=999.0),
+        Product(name="Laptop", price=1999.0),
+    ]
+
+
+# ---------------- Async Repository Mocks ----------------
+
+@pytest.fixture
+def user_repo_mock():
+    repo = AsyncMock()
+    repo.insert = AsyncMock(return_value="fake_user_id")
+    repo.find_by_id = AsyncMock(return_value=User(name="John", email="john@example.com"))
+    return repo
+
+@pytest.fixture
+def product_repo_mock(fake_products):
+    repo = AsyncMock()
+    repo.find_all = AsyncMock(return_value=fake_products)
+    return repo
+
+
+# ---------------- Test UserService ----------------
+
+@pytest.mark.asyncio
+async def test_create_user(user_repo_mock, product_repo_mock):
+    product_service = ProductService(product_repo_mock)
+    user_service = UserService(user_repo_mock, product_service)
+
+    user_id = await user_service.create_user("John", "john@example.com")
+
+    assert user_id == "fake_user_id"
+    user_repo_mock.insert.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_user_products(user_repo_mock, product_repo_mock, fake_products):
+    product_service = ProductService(product_repo_mock)
+    user_service = UserService(user_repo_mock, product_service)
+
+    products = await user_service.get_user_products("some_id")
+
+    assert len(products) == 2
+    assert products[0].name == "Phone"
+    user_repo_mock.find_by_id.assert_called_once_with("some_id")
+    product_repo_mock.find_all.assert_called_once()
