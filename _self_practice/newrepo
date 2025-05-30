@@ -1,0 +1,865 @@
+# filename: my_project/app/common/py_object_id.py
+from bson import ObjectId
+from pydantic import GetJsonSchemaHandler # Pydantic v2 specific
+from pydantic_core import core_schema # Pydantic v2 specific
+
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v, _field): # _field argument added for Pydantic v2 compatibility
+        if not ObjectId.is_valid(v):
+            raise ValueError("Invalid ObjectId")
+        return ObjectId(v)
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema_obj: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> dict: # Pydantic v2
+        json_schema = handler(core_schema_obj)
+        json_schema.update(type="string")
+        return json_schema
+
+# filename: my_project/app/audit_logs/models.py
+from typing import Any, Optional, Dict, List
+from datetime import datetime
+from pydantic import BaseModel, Field
+from bson import ObjectId
+from ..common.py_object_id import PyObjectId # Relative import
+
+class AuditLogModel(BaseModel):
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    user_id: str
+    action: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    details: Optional[Dict[str, Any]] = None
+
+    class Config:
+        populate_by_name = True
+        json_encoders = {ObjectId: str, PyObjectId: str}
+        arbitrary_types_allowed = True
+
+# filename: my_project/app/common/base_motor_repository.py
+import pymongo
+from abc import ABC, abstractmethod
+from typing import (
+    TypeVar, Generic, Dict, Any, List, Optional, Tuple, AsyncGenerator
+)
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
+from pymongo.results import (
+    InsertOneResult, InsertManyResult, UpdateResult, DeleteResult
+)
+
+T = TypeVar("T")
+MongoDoc = Dict[str, Any]
+
+class BaseMotorRepository(ABC, Generic[T]):
+    _database_name: str
+    _collection_name: str
+
+    def __init__(self, db_client: AsyncIOMotorClient) -> None:
+        if not hasattr(self, "_collection_name") or not self._collection_name:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must define _collection_name"
+            )
+        if not hasattr(self, "_database_name") or not self._database_name:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must define _database_name"
+            )
+        self._db_client: AsyncIOMotorClient = db_client
+        self._collection: AsyncIOMotorCollection = self._db_client[self._database_name][self._collection_name]
+
+    @abstractmethod
+    def _map_to_model(self, doc: MongoDoc) -> T:
+        pass
+
+    @abstractmethod
+    def _map_to_document(self, model: T) -> MongoDoc:
+        pass
+
+    async def _execute_find_one(
+        self,
+        filter_query: MongoDoc,
+        projection: Optional[MongoDoc] = None,
+        sort: Optional[List[Tuple[str, int]]] = None,
+    ) -> Optional[MongoDoc]:
+        try:
+            return await self._collection.find_one(
+                filter=filter_query, projection=projection, sort=sort
+            )
+        except Exception as e:
+            print(f"Error in _execute_find_one for {self._collection_name}: {e}")
+            raise
+
+    async def _execute_find_many(
+        self,
+        filter_query: MongoDoc,
+        projection: Optional[MongoDoc] = None,
+        sort: Optional[List[Tuple[str, int]]] = None,
+        skip: int = 0,
+        limit: Optional[int] = None,
+    ) -> List[MongoDoc]:
+        try:
+            cursor = self._collection.find(
+                filter=filter_query,
+                projection=projection,
+                sort=sort,
+                skip=skip,
+                limit=limit if limit is not None and limit > 0 else 0
+            )
+            effective_length = limit if limit is not None and limit > 0 else None
+            return await cursor.to_list(length=effective_length)
+        except Exception as e:
+            print(f"Error in _execute_find_many for {self._collection_name}: {e}")
+            raise
+
+    async def _execute_insert_one(self, document: MongoDoc) -> InsertOneResult:
+        try:
+            return await self._collection.insert_one(document)
+        except Exception as e:
+            print(f"Error in _execute_insert_one for {self._collection_name}: {e}")
+            raise
+
+    async def _execute_insert_many(self, documents: List[MongoDoc]) -> InsertManyResult:
+        if not documents:
+            return InsertManyResult([], acknowledged=True)
+        try:
+            return await self._collection.insert_many(documents, ordered=False)
+        except Exception as e:
+            print(f"Error in _execute_insert_many for {self._collection_name}: {e}")
+            raise
+
+    async def _execute_update_one(
+        self, filter_query: MongoDoc, update_doc: MongoDoc, upsert: bool = False
+    ) -> UpdateResult:
+        try:
+            return await self._collection.update_one(filter_query, update_doc, upsert=upsert)
+        except Exception as e:
+            print(f"Error in _execute_update_one for {self._collection_name}: {e}")
+            raise
+
+    async def _execute_update_many(
+        self, filter_query: MongoDoc, update_doc: MongoDoc, upsert: bool = False
+    ) -> UpdateResult:
+        try:
+            return await self._collection.update_many(filter_query, update_doc, upsert=upsert)
+        except Exception as e:
+            print(f"Error in _execute_update_many for {self._collection_name}: {e}")
+            raise
+
+    async def _execute_delete_one(self, filter_query: MongoDoc) -> DeleteResult:
+        try:
+            return await self._collection.delete_one(filter_query)
+        except Exception as e:
+            print(f"Error in _execute_delete_one for {self._collection_name}: {e}")
+            raise
+
+    async def _execute_delete_many(self, filter_query: MongoDoc) -> DeleteResult:
+        try:
+            return await self._collection.delete_many(filter_query)
+        except Exception as e:
+            print(f"Error in _execute_delete_many for {self._collection_name}: {e}")
+            raise
+
+    async def _execute_count_documents(self, filter_query: MongoDoc) -> int:
+        try:
+            return await self._collection.count_documents(filter_query)
+        except Exception as e:
+            print(f"Error in _execute_count_documents for {self._collection_name}: {e}")
+            raise
+
+    @abstractmethod
+    async def create(self, entity: T) -> T:
+        pass
+
+    @abstractmethod
+    async def create_many(self, entities: List[T]) -> List[T]:
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, id_value: Any, projection: Optional[MongoDoc] = None) -> Optional[T]:
+        pass
+
+    @abstractmethod
+    async def find_one(
+        self,
+        filter_query: MongoDoc,
+        projection: Optional[MongoDoc] = None,
+        sort_options: Optional[List[Tuple[str, int]]] = None,
+    ) -> Optional[T]:
+        pass
+
+    async def find_many_paginated_skip_limit(
+        self,
+        filter_query: MongoDoc,
+        projection: Optional[MongoDoc] = None,
+        sort_options: Optional[List[Tuple[str, int]]] = None,
+        skip: int = 0,
+        limit: Optional[int] = 100,
+    ) -> List[T]:
+        if limit is not None and limit <= 0:
+            return []
+        docs = await self._execute_find_many(filter_query, projection, sort_options, skip, limit)
+        return [self._map_to_model(doc) for doc in docs]
+
+    async def find_many_paginated_seek(
+        self,
+        base_filter_query: MongoDoc,
+        sort_field: str,
+        batch_size: int,
+        last_seen_value: Optional[Any] = None,
+        sort_order: int = pymongo.ASCENDING,
+        projection: Optional[MongoDoc] = None,
+    ) -> AsyncGenerator[List[T], None]:
+        if batch_size <= 0:
+            raise ValueError("Batch size must be greater than 0.")
+        if sort_order not in [pymongo.ASCENDING, pymongo.DESCENDING]:
+            raise ValueError("sort_order must be pymongo.ASCENDING or pymongo.DESCENDING")
+
+        current_filter = base_filter_query.copy()
+        _last_seen_value = last_seen_value
+
+        while True:
+            iter_filter = current_filter.copy() # Use a copy for each iteration's specific range
+            if _last_seen_value is not None:
+                if sort_order == pymongo.ASCENDING:
+                    iter_filter[sort_field] = {"$gt": _last_seen_value}
+                else:
+                    iter_filter[sort_field] = {"$lt": _last_seen_value}
+            try:
+                docs_batch = await self._execute_find_many(
+                    filter_query=iter_filter,
+                    projection=projection,
+                    sort=[(sort_field, sort_order)],
+                    skip=0,
+                    limit=batch_size
+                )
+                if not docs_batch:
+                    break
+                models_batch = [self._map_to_model(doc) for doc in docs_batch]
+                yield models_batch
+                _last_seen_value = docs_batch[-1].get(sort_field)
+                if _last_seen_value is None:
+                    print(f"Warning: Sort field '{sort_field}' missing in last doc of batch. Stopping seek for {self._collection_name}.")
+                    break
+            except Exception as e:
+                print(f"Error during seek pagination batch for {self._collection_name}: {e}")
+                break
+
+    @abstractmethod
+    async def update_one(
+        self, filter_query: MongoDoc, update_doc_payload: MongoDoc, upsert: bool = False
+    ) -> Optional[T]:
+        pass
+
+    @abstractmethod
+    async def update_many(
+        self, filter_query: MongoDoc, update_doc_payload: MongoDoc, upsert: bool = False
+    ) -> int:
+        pass
+
+    @abstractmethod
+    async def delete_one(self, filter_query: MongoDoc) -> bool:
+        pass
+
+    @abstractmethod
+    async def delete_many(self, filter_query: MongoDoc) -> int:
+        pass
+
+    async def count(self, filter_query: MongoDoc = None) -> int:
+        return await self._execute_count_documents(filter_query or {})
+
+# filename: my_project/app/common/base_mongo_repository.py
+import pymongo
+from abc import ABC, abstractmethod
+from typing import (
+    TypeVar, Generic, Dict, Any, List, Optional, Tuple, Generator
+)
+from pymongo import MongoClient
+from pymongo.collection import Collection as MongoCollection # Alias to avoid confusion
+from pymongo.results import (
+    InsertOneResult, InsertManyResult, UpdateResult, DeleteResult
+)
+
+T = TypeVar("T")
+MongoDoc = Dict[str, Any]
+
+class BaseMongoRepository(ABC, Generic[T]):
+    _database_name: str
+    _collection_name: str
+
+    def __init__(self, db_client: MongoClient) -> None:
+        if not hasattr(self, "_collection_name") or not self._collection_name:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must define _collection_name"
+            )
+        if not hasattr(self, "_database_name") or not self._database_name:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must define _database_name"
+            )
+        self._db_client: MongoClient = db_client
+        self._collection: MongoCollection = self._db_client[self._database_name][self._collection_name]
+
+    @abstractmethod
+    def _map_to_model(self, doc: MongoDoc) -> T:
+        pass
+
+    @abstractmethod
+    def _map_to_document(self, model: T) -> MongoDoc:
+        pass
+
+    def _execute_find_one(
+        self,
+        filter_query: MongoDoc,
+        projection: Optional[MongoDoc] = None,
+        sort: Optional[List[Tuple[str, int]]] = None,
+    ) -> Optional[MongoDoc]:
+        try:
+            return self._collection.find_one(
+                filter=filter_query, projection=projection, sort=sort
+            )
+        except Exception as e:
+            print(f"Error in _execute_find_one for {self._collection_name}: {e}")
+            raise
+
+    def _execute_find_many(
+        self,
+        filter_query: MongoDoc,
+        projection: Optional[MongoDoc] = None,
+        sort: Optional[List[Tuple[str, int]]] = None,
+        skip: int = 0,
+        limit: Optional[int] = None,
+    ) -> List[MongoDoc]:
+        try:
+            cursor = self._collection.find(
+                filter=filter_query,
+                projection=projection,
+                sort=sort,
+                skip=skip,
+                limit=limit if limit is not None and limit > 0 else 0
+            )
+            return list(cursor) # Synchronous cursor iteration
+        except Exception as e:
+            print(f"Error in _execute_find_many for {self._collection_name}: {e}")
+            raise
+
+    def _execute_insert_one(self, document: MongoDoc) -> InsertOneResult:
+        try:
+            return self._collection.insert_one(document)
+        except Exception as e:
+            print(f"Error in _execute_insert_one for {self._collection_name}: {e}")
+            raise
+
+    def _execute_insert_many(self, documents: List[MongoDoc]) -> InsertManyResult:
+        if not documents:
+            return InsertManyResult([], acknowledged=True)
+        try:
+            return self._collection.insert_many(documents, ordered=False)
+        except Exception as e:
+            print(f"Error in _execute_insert_many for {self._collection_name}: {e}")
+            raise
+
+    def _execute_update_one(
+        self, filter_query: MongoDoc, update_doc: MongoDoc, upsert: bool = False
+    ) -> UpdateResult:
+        try:
+            return self._collection.update_one(filter_query, update_doc, upsert=upsert)
+        except Exception as e:
+            print(f"Error in _execute_update_one for {self._collection_name}: {e}")
+            raise
+
+    def _execute_update_many(
+        self, filter_query: MongoDoc, update_doc: MongoDoc, upsert: bool = False
+    ) -> UpdateResult:
+        try:
+            return self._collection.update_many(filter_query, update_doc, upsert=upsert)
+        except Exception as e:
+            print(f"Error in _execute_update_many for {self._collection_name}: {e}")
+            raise
+
+    def _execute_delete_one(self, filter_query: MongoDoc) -> DeleteResult:
+        try:
+            return self._collection.delete_one(filter_query)
+        except Exception as e:
+            print(f"Error in _execute_delete_one for {self._collection_name}: {e}")
+            raise
+
+    def _execute_delete_many(self, filter_query: MongoDoc) -> DeleteResult:
+        try:
+            return self._collection.delete_many(filter_query)
+        except Exception as e:
+            print(f"Error in _execute_delete_many for {self._collection_name}: {e}")
+            raise
+
+    def _execute_count_documents(self, filter_query: MongoDoc) -> int:
+        try:
+            return self.collection.count_documents(filter_query) # Direct attribute access if needed
+        except Exception as e:
+            print(f"Error in _execute_count_documents for {self._collection_name}: {e}")
+            raise
+
+    @abstractmethod
+    def create(self, entity: T) -> T:
+        pass
+
+    @abstractmethod
+    def create_many(self, entities: List[T]) -> List[T]:
+        pass
+
+    @abstractmethod
+    def get_by_id(self, id_value: Any, projection: Optional[MongoDoc] = None) -> Optional[T]:
+        pass
+
+    @abstractmethod
+    def find_one(
+        self,
+        filter_query: MongoDoc,
+        projection: Optional[MongoDoc] = None,
+        sort_options: Optional[List[Tuple[str, int]]] = None,
+    ) -> Optional[T]:
+        pass
+
+    def find_many_paginated_skip_limit(
+        self,
+        filter_query: MongoDoc,
+        projection: Optional[MongoDoc] = None,
+        sort_options: Optional[List[Tuple[str, int]]] = None,
+        skip: int = 0,
+        limit: Optional[int] = 100,
+    ) -> List[T]:
+        if limit is not None and limit <= 0:
+            return []
+        docs = self._execute_find_many(filter_query, projection, sort_options, skip, limit)
+        return [self._map_to_model(doc) for doc in docs]
+
+    def find_many_paginated_seek(
+        self,
+        base_filter_query: MongoDoc,
+        sort_field: str,
+        batch_size: int,
+        last_seen_value: Optional[Any] = None,
+        sort_order: int = pymongo.ASCENDING,
+        projection: Optional[MongoDoc] = None,
+    ) -> Generator[List[T], None, None]:
+        if batch_size <= 0:
+            raise ValueError("Batch size must be greater than 0.")
+        if sort_order not in [pymongo.ASCENDING, pymongo.DESCENDING]:
+            raise ValueError("sort_order must be pymongo.ASCENDING or pymongo.DESCENDING")
+
+        current_filter = base_filter_query.copy()
+        _last_seen_value = last_seen_value
+
+        while True:
+            iter_filter = current_filter.copy()
+            if _last_seen_value is not None:
+                if sort_order == pymongo.ASCENDING:
+                    iter_filter[sort_field] = {"$gt": _last_seen_value}
+                else:
+                    iter_filter[sort_field] = {"$lt": _last_seen_value}
+            try:
+                docs_batch = self._execute_find_many(
+                    filter_query=iter_filter,
+                    projection=projection,
+                    sort=[(sort_field, sort_order)],
+                    skip=0,
+                    limit=batch_size
+                )
+                if not docs_batch:
+                    break
+                models_batch = [self._map_to_model(doc) for doc in docs_batch]
+                yield models_batch
+                _last_seen_value = docs_batch[-1].get(sort_field)
+                if _last_seen_value is None:
+                    print(f"Warning: Sort field '{sort_field}' missing in last doc of batch. Stopping seek for {self._collection_name}.")
+                    break
+            except Exception as e:
+                print(f"Error during seek pagination batch for {self._collection_name}: {e}")
+                break
+
+    @abstractmethod
+    def update_one(
+        self, filter_query: MongoDoc, update_doc_payload: MongoDoc, upsert: bool = False
+    ) -> Optional[T]: # Or UpdateResult / bool
+        pass
+
+    @abstractmethod
+    def update_many(
+        self, filter_query: MongoDoc, update_doc_payload: MongoDoc, upsert: bool = False
+    ) -> int: # Or UpdateResult
+        pass
+
+    @abstractmethod
+    def delete_one(self, filter_query: MongoDoc) -> bool: # Or DeleteResult
+        pass
+
+    @abstractmethod
+    def delete_many(self, filter_query: MongoDoc) -> int: # Or DeleteResult
+        pass
+
+    def count(self, filter_query: MongoDoc = None) -> int:
+        return self._execute_count_documents(filter_query or {})
+
+
+# filename: my_project/app/audit_logs/repositories.py
+from typing import Any, List, Optional, Dict, Tuple
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient, ASCENDING, DESCENDING # Import pymongo for constants
+from bson import ObjectId
+
+from ..common.base_motor_repository import BaseMotorRepository, MongoDoc as MotorMongoDoc
+from ..common.base_mongo_repository import BaseMongoRepository, MongoDoc as SyncMongoDoc
+from .models import AuditLogModel # Assuming models.py is in the same audit_logs package
+
+# --- Motor Repository for Audit Logs ---
+class AuditLogMotorRepository(BaseMotorRepository[AuditLogModel]):
+    _database_name: str = "audit_db_motor"  # Example, get from config
+    _collection_name: str = "audit_logs"
+
+    def __init__(self, db_client: AsyncIOMotorClient):
+        super().__init__(db_client)
+
+    def _map_to_model(self, doc: MotorMongoDoc) -> AuditLogModel:
+        return AuditLogModel(**doc)
+
+    def _map_to_document(self, model: AuditLogModel) -> MotorMongoDoc:
+        # Pydantic v2: model_dump instead of dict
+        doc = model.model_dump(by_alias=True, exclude_none=True)
+        # Ensure _id is ObjectId if present and not None
+        if "_id" in doc and doc["_id"] is not None and not isinstance(doc["_id"], ObjectId):
+            doc["_id"] = ObjectId(doc["_id"])
+        elif "_id" in doc and doc["_id"] is None: # Remove if id was None and became _id: None
+            del doc["_id"]
+        return doc
+
+    async def create(self, entity: AuditLogModel) -> AuditLogModel:
+        doc_to_insert = self._map_to_document(entity)
+        if "_id" not in doc_to_insert: # Let MongoDB generate _id
+             pass # _id will be generated by mongo
+        elif doc_to_insert["_id"] is None : # if id was passed as None
+            del doc_to_insert["_id"] # let mongo generate it
+
+        result = await self._execute_insert_one(doc_to_insert)
+        entity.id = result.inserted_id # Assign the generated or confirmed ID
+        return entity
+
+    async def create_many(self, entities: List[AuditLogModel]) -> List[AuditLogModel]:
+        docs_to_insert = []
+        for entity in entities:
+            doc = self._map_to_document(entity)
+            if "_id" not in doc:
+                 pass
+            elif doc["_id"] is None :
+                del doc["_id"]
+            docs_to_insert.append(doc)
+
+        result = await self._execute_insert_many(docs_to_insert)
+        # Assign IDs back to entities. This assumes order is preserved.
+        # A more robust way might involve re-fetching or a map if order isn't guaranteed
+        # and client-side IDs weren't pre-assigned.
+        for i, entity in enumerate(entities):
+            if i < len(result.inserted_ids):
+                entity.id = result.inserted_ids[i]
+        return entities
+
+    async def get_by_id(self, id_value: Any, projection: Optional[MotorMongoDoc] = None) -> Optional[AuditLogModel]:
+        obj_id = id_value if isinstance(id_value, ObjectId) else ObjectId(str(id_value))
+        doc = await self._execute_find_one({"_id": obj_id}, projection=projection)
+        return self._map_to_model(doc) if doc else None
+
+    async def find_one(
+        self,
+        filter_query: MotorMongoDoc,
+        projection: Optional[MotorMongoDoc] = None,
+        sort_options: Optional[List[Tuple[str, int]]] = None,
+    ) -> Optional[AuditLogModel]:
+        doc = await self._execute_find_one(filter_query, projection, sort_options)
+        return self._map_to_model(doc) if doc else None
+
+    async def update_one(
+        self, filter_query: MotorMongoDoc, update_doc_payload: MotorMongoDoc, upsert: bool = False
+    ) -> Optional[AuditLogModel]:
+        # This payload is expected to be a MongoDB update document, e.g., {"$set": {...}}
+        result = await self._execute_update_one(filter_query, update_doc_payload, upsert)
+        if result.matched_count > 0 or result.upserted_id is not None:
+            id_to_fetch = result.upserted_id
+            if not id_to_fetch and "_id" in filter_query: # if existing doc was updated via its _id
+                id_to_fetch = filter_query["_id"]
+            
+            if id_to_fetch:
+                return await self.get_by_id(id_to_fetch)
+            else: # if updated by non-id field, re-query with original filter
+                  # WARNING: This might not be unique if filter_query wasn't unique
+                updated_doc = await self._execute_find_one(filter_query)
+                return self._map_to_model(updated_doc) if updated_doc else None
+        return None
+
+    async def update_many(
+        self, filter_query: MotorMongoDoc, update_doc_payload: MotorMongoDoc, upsert: bool = False
+    ) -> int:
+        result = await self._execute_update_many(filter_query, update_doc_payload, upsert)
+        return result.modified_count
+
+    async def delete_one(self, filter_query: MotorMongoDoc) -> bool:
+        result = await self._execute_delete_one(filter_query)
+        return result.deleted_count > 0
+
+    async def delete_many(self, filter_query: MotorMongoDoc) -> int:
+        result = await self._execute_delete_many(filter_query)
+        return result.deleted_count
+
+    async def find_by_user_id_sorted_by_time(self, user_id: str, limit: int = 10) -> List[AuditLogModel]:
+        """Custom method example"""
+        return await self.find_many_paginated_skip_limit(
+            filter_query={"user_id": user_id},
+            sort_options=[("timestamp", DESCENDING)],
+            limit=limit
+        )
+
+# --- Synchronous PyMongo Repository for Audit Logs ---
+class AuditLogRepository(BaseMongoRepository[AuditLogModel]):
+    _database_name: str = "audit_db_sync"  # Example, get from config
+    _collection_name: str = "audit_logs"
+
+    def __init__(self, db_client: MongoClient):
+        super().__init__(db_client)
+
+    def _map_to_model(self, doc: SyncMongoDoc) -> AuditLogModel:
+        return AuditLogModel(**doc)
+
+    def _map_to_document(self, model: AuditLogModel) -> SyncMongoDoc:
+        doc = model.model_dump(by_alias=True, exclude_none=True)
+        if "_id" in doc and doc["_id"] is not None and not isinstance(doc["_id"], ObjectId):
+            doc["_id"] = ObjectId(doc["_id"])
+        elif "_id" in doc and doc["_id"] is None:
+            del doc["_id"]
+        return doc
+
+    def create(self, entity: AuditLogModel) -> AuditLogModel:
+        doc_to_insert = self._map_to_document(entity)
+        if "_id" not in doc_to_insert:
+             pass
+        elif doc_to_insert["_id"] is None :
+            del doc_to_insert["_id"]
+        result = self._execute_insert_one(doc_to_insert)
+        entity.id = result.inserted_id
+        return entity
+
+    def create_many(self, entities: List[AuditLogModel]) -> List[AuditLogModel]:
+        docs_to_insert = []
+        for entity in entities:
+            doc = self._map_to_document(entity)
+            if "_id" not in doc:
+                 pass
+            elif doc["_id"] is None :
+                del doc["_id"]
+            docs_to_insert.append(doc)
+        result = self._execute_insert_many(docs_to_insert)
+        for i, entity in enumerate(entities):
+            if i < len(result.inserted_ids):
+                entity.id = result.inserted_ids[i]
+        return entities
+
+    def get_by_id(self, id_value: Any, projection: Optional[SyncMongoDoc] = None) -> Optional[AuditLogModel]:
+        obj_id = id_value if isinstance(id_value, ObjectId) else ObjectId(str(id_value))
+        doc = self._execute_find_one({"_id": obj_id}, projection=projection)
+        return self._map_to_model(doc) if doc else None
+
+    def find_one(
+        self,
+        filter_query: SyncMongoDoc,
+        projection: Optional[SyncMongoDoc] = None,
+        sort_options: Optional[List[Tuple[str, int]]] = None,
+    ) -> Optional[AuditLogModel]:
+        doc = self._execute_find_one(filter_query, projection, sort_options)
+        return self._map_to_model(doc) if doc else None
+
+    def update_one(
+        self, filter_query: SyncMongoDoc, update_doc_payload: SyncMongoDoc, upsert: bool = False
+    ) -> Optional[AuditLogModel]:
+        result = self._execute_update_one(filter_query, update_doc_payload, upsert)
+        if result.matched_count > 0 or result.upserted_id is not None:
+            id_to_fetch = result.upserted_id
+            if not id_to_fetch and "_id" in filter_query:
+                id_to_fetch = filter_query["_id"]
+
+            if id_to_fetch:
+                return self.get_by_id(id_to_fetch)
+            else:
+                updated_doc = self._execute_find_one(filter_query)
+                return self._map_to_model(updated_doc) if updated_doc else None
+        return None
+
+    def update_many(
+        self, filter_query: SyncMongoDoc, update_doc_payload: SyncMongoDoc, upsert: bool = False
+    ) -> int:
+        result = self._execute_update_many(filter_query, update_doc_payload, upsert)
+        return result.modified_count
+
+    def delete_one(self, filter_query: SyncMongoDoc) -> bool:
+        result = self._execute_delete_one(filter_query)
+        return result.deleted_count > 0
+
+    def delete_many(self, filter_query: SyncMongoDoc) -> int:
+        result = self._execute_delete_many(filter_query)
+        return result.deleted_count
+
+    def find_by_user_id_sorted_by_time(self, user_id: str, limit: int = 10) -> List[AuditLogModel]:
+        """Custom method example"""
+        return self.find_many_paginated_skip_limit(
+            filter_query={"user_id": user_id},
+            sort_options=[("timestamp", DESCENDING)],
+            limit=limit
+        )
+
+# filename: my_project/main_example.py (Example usage)
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient, ASCENDING, DESCENDING
+from bson import ObjectId
+from datetime import datetime
+
+# Assuming the files are structured as:
+# my_project/
+#   app/
+#     common/
+#       py_object_id.py
+#       base_motor_repository.py
+#       base_mongo_repository.py
+#     audit_logs/
+#       models.py
+#       repositories.py
+#   main_example.py
+
+from app.audit_logs.models import AuditLogModel
+from app.audit_logs.repositories import AuditLogMotorRepository, AuditLogRepository
+
+async def motor_example():
+    print("--- Motor Example ---")
+    # Replace with your MongoDB connection string
+    MOTOR_URI = "mongodb://localhost:27017"
+    client = AsyncIOMotorClient(MOTOR_URI)
+    repo = AuditLogMotorRepository(db_client=client)
+
+    # Clean up previous test data
+    await repo._collection.delete_many({})
+    print(f"Cleaned collection: {repo._collection_name}")
+
+
+    # Create
+    log1 = AuditLogModel(user_id="user123", action="login", details={"ip": "192.168.1.1"})
+    created_log1 = await repo.create(log1)
+    print(f"Created Log 1: {created_log1.id}")
+
+    log2 = AuditLogModel(user_id="user456", action="view_page", details={"page": "/home"})
+    log3 = AuditLogModel(user_id="user123", action="logout", timestamp=datetime.utcnow()) # Explicit timestamp
+    created_logs = await repo.create_many([log2, log3])
+    print(f"Created Log 2 ID: {created_logs[0].id}")
+    print(f"Created Log 3 ID: {created_logs[1].id}")
+
+    # Get by ID
+    fetched_log1 = await repo.get_by_id(created_log1.id)
+    if fetched_log1:
+        print(f"Fetched Log 1 by ID: {fetched_log1.action}")
+
+    # Find one
+    specific_log = await repo.find_one({"user_id": "user456", "action": "view_page"})
+    if specific_log:
+        print(f"Found specific log for user456: {specific_log.id}")
+
+    # Update one
+    # The update_doc_payload should be a MongoDB update document, e.g., {"$set": {"key": "value"}}
+    # If you want to pass partial model fields, the repo method should construct this.
+    # Let's assume we want to set new details for log1
+    update_payload = {"$set": {"details.ip": "10.0.0.5", "details.status": "successful"}}
+    updated_log_model = await repo.update_one({"_id": created_log1.id}, update_payload)
+    if updated_log_model:
+        print(f"Updated Log 1 IP: {updated_log_model.details.get('ip')}")
+
+    # Count
+    count_user123 = await repo.count({"user_id": "user123"})
+    print(f"Count for user123: {count_user123}")
+
+    # Skip-Limit Pagination
+    print("\nSkip-Limit Pagination (all logs, page 1, limit 2, sorted by time desc):")
+    page1 = await repo.find_many_paginated_skip_limit(
+        filter_query={},
+        sort_options=[("timestamp", DESCENDING)],
+        skip=0,
+        limit=2
+    )
+    for log in page1:
+        print(f"  ID: {log.id}, Action: {log.action}, Time: {log.timestamp}")
+
+    # Seek Pagination
+    print("\nSeek Pagination (all logs, batch_size 1, sorted by _id asc):")
+    batch_num = 0
+    last_id = None
+    async for batch in repo.find_many_paginated_seek(
+        base_filter_query={},
+        sort_field="_id", # _id is ObjectId, works well for seek
+        batch_size=1,
+        last_seen_value=None, # Start from beginning
+        sort_order=ASCENDING
+    ):
+        batch_num +=1
+        print(f"  Seek Batch {batch_num}:")
+        for log in batch:
+            print(f"    ID: {log.id}, Action: {log.action}")
+            last_id = log.id # For demonstration, not strictly needed by the generator user
+        if batch_num >= 3: # Limit for example
+            break
+    
+    # Custom repo method
+    user123_recent = await repo.find_by_user_id_sorted_by_time("user123", limit=5)
+    print(f"\nUser 123 recent logs ({len(user123_recent)}):")
+    for log in user123_recent:
+        print(f"  ID: {log.id}, Action: {log.action}")
+
+
+    # Delete
+    deleted = await repo.delete_one({"_id": created_logs[0].id}) # Delete log2
+    print(f"Log 2 deleted: {deleted}")
+    deleted_count = await repo.delete_many({"user_id": "user123"})
+    print(f"Logs deleted for user123: {deleted_count}")
+
+    # Close client when done (in a real app, manage this with app lifecycle)
+    client.close()
+
+def sync_mongo_example():
+    print("\n--- Sync PyMongo Example ---")
+    MONGO_URI = "mongodb://localhost:27017"
+    client = MongoClient(MONGO_URI)
+    repo = AuditLogRepository(db_client=client)
+
+    # Clean up
+    repo._collection.delete_many({})
+    print(f"Cleaned sync collection: {repo._collection_name}")
+
+
+    log1_sync = AuditLogModel(user_id="sync_user1", action="sync_action1")
+    created_log1_sync = repo.create(log1_sync)
+    print(f"Sync Created Log 1: {created_log1_sync.id}")
+
+    # Seek Pagination (Sync)
+    print("\nSync Seek Pagination (all logs, batch_size 1, sorted by _id asc):")
+    batch_num_sync = 0
+    for batch in repo.find_many_paginated_seek(
+        base_filter_query={},
+        sort_field="_id",
+        batch_size=1,
+        sort_order=ASCENDING
+    ):
+        batch_num_sync +=1
+        print(f"  Sync Seek Batch {batch_num_sync}:")
+        for log in batch:
+            print(f"    ID: {log.id}, Action: {log.action}")
+        if batch_num_sync >=2: break
+
+    client.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(motor_example())
+    sync_mongo_example()
